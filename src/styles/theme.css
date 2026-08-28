@@ -1,0 +1,154 @@
+/* UXO visual foundation
+ *
+ * The active tokens default to the light palette, follow the operating system,
+ * and can be pinned with `data-theme`. Keeping every window on these shared
+ * tokens makes the main app and recording overlay feel like one product.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* Light: cool paper surfaces with an ink-blue foreground. */
+  --light-color-text: #0b1f2e;
+  --light-color-background: #f3f7f9;
+  --light-color-surface: #ffffff;
+  --light-color-surface-raised: #f8fbfc;
+  --light-color-surface-glass: rgb(255 255 255 / 76%);
+  --light-color-border: #c6d6dc;
+  --light-color-border-strong: #91aab4;
+  --light-color-logo-primary: #06758d;
+  --light-color-logo-stroke: #15556b;
+  --light-color-background-ui: #087e96;
+  --light-color-on-accent: #f8fdff;
+  --light-color-mid-gray: #5e7480;
+  --light-color-focus: #a95f08;
+  --light-color-recording: #ad540c;
+  --light-color-warning: #9a5a08;
+  --light-color-error: #b4233a;
+  --light-color-shadow: rgb(7 28 43 / 18%);
+  --light-color-selection: rgb(6 117 141 / 22%);
+  --light-color-ambient: rgb(10 137 163 / 9%);
+
+  /* Dark: deep navy rather than neutral black, with a clear cyan signal. */
+  --dark-color-text: #e9f4f7;
+  --dark-color-background: #07131f;
+  --dark-color-surface: #0b1b2a;
+  --dark-color-surface-raised: #102435;
+  --dark-color-surface-glass: rgb(11 27 42 / 78%);
+  --dark-color-border: #294353;
+  --dark-color-border-strong: #476777;
+  --dark-color-logo-primary: #5ad4e3;
+  --dark-color-logo-stroke: #8be4ed;
+  --dark-color-background-ui: #2fb6c8;
+  --dark-color-on-accent: #061722;
+  --dark-color-mid-gray: #91a9b5;
+  --dark-color-focus: #efb34a;
+  --dark-color-recording: #f0a13b;
+  --dark-color-warning: #efb34a;
+  --dark-color-error: #ff7c88;
+  --dark-color-shadow: rgb(0 5 12 / 48%);
+  --dark-color-selection: rgb(90 212 227 / 24%);
+  --dark-color-ambient: rgb(44 180 202 / 10%);
+
+  /* Active palette. */
+  --color-text: var(--light-color-text);
+  --color-background: var(--light-color-background);
+  --color-surface: var(--light-color-surface);
+  --color-surface-raised: var(--light-color-surface-raised);
+  --color-surface-glass: var(--light-color-surface-glass);
+  --color-border: var(--light-color-border);
+  --color-border-strong: var(--light-color-border-strong);
+  --color-logo-primary: var(--light-color-logo-primary);
+  --color-logo-stroke: var(--light-color-logo-stroke);
+  --color-background-ui: var(--light-color-background-ui);
+  --color-on-accent: var(--light-color-on-accent);
+  --color-mid-gray: var(--light-color-mid-gray);
+  --color-focus: var(--light-color-focus);
+  --color-recording: var(--light-color-recording);
+  --color-warning: var(--light-color-warning);
+  --color-error: var(--light-color-error);
+  --color-shadow: var(--light-color-shadow);
+  --color-selection: var(--light-color-selection);
+  --color-ambient: var(--light-color-ambient);
+
+  /* Shared brand primitives used by code-native SVG artwork. */
+  --color-brand-ink: #071827;
+  --color-brand-border: #24556a;
+  --color-brand-cyan-start: #73e0ea;
+  --color-brand-cyan-end: #1ca8c0;
+  --color-brand-amber-start: #f6ca69;
+  --color-brand-amber-end: #e99834;
+  --color-text-stroke: var(--color-background);
+  --uxo-icon-accent: var(--color-recording);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: var(--dark-color-text);
+    --color-background: var(--dark-color-background);
+    --color-surface: var(--dark-color-surface);
+    --color-surface-raised: var(--dark-color-surface-raised);
+    --color-surface-glass: var(--dark-color-surface-glass);
+    --color-border: var(--dark-color-border);
+    --color-border-strong: var(--dark-color-border-strong);
+    --color-logo-primary: var(--dark-color-logo-primary);
+    --color-logo-stroke: var(--dark-color-logo-stroke);
+    --color-background-ui: var(--dark-color-background-ui);
+    --color-on-accent: var(--dark-color-on-accent);
+    --color-mid-gray: var(--dark-color-mid-gray);
+    --color-focus: var(--dark-color-focus);
+    --color-recording: var(--dark-color-recording);
+    --color-warning: var(--dark-color-warning);
+    --color-error: var(--dark-color-error);
+    --color-shadow: var(--dark-color-shadow);
+    --color-selection: var(--dark-color-selection);
+    --color-ambient: var(--dark-color-ambient);
+  }
+}
+
+/* Explicit settings overrides have higher specificity than the OS preference. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-text: var(--light-color-text);
+  --color-background: var(--light-color-background);
+  --color-surface: var(--light-color-surface);
+  --color-surface-raised: var(--light-color-surface-raised);
+  --color-surface-glass: var(--light-color-surface-glass);
+  --color-border: var(--light-color-border);
+  --color-border-strong: var(--light-color-border-strong);
+  --color-logo-primary: var(--light-color-logo-primary);
+  --color-logo-stroke: var(--light-color-logo-stroke);
+  --color-background-ui: var(--light-color-background-ui);
+  --color-on-accent: var(--light-color-on-accent);
+  --color-mid-gray: var(--light-color-mid-gray);
+  --color-focus: var(--light-color-focus);
+  --color-recording: var(--light-color-recording);
+  --color-warning: var(--light-color-warning);
+  --color-error: var(--light-color-error);
+  --color-shadow: var(--light-color-shadow);
+  --color-selection: var(--light-color-selection);
+  --color-ambient: var(--light-color-ambient);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-text: var(--dark-color-text);
+  --color-background: var(--dark-color-background);
+  --color-surface: var(--dark-color-surface);
+  --color-surface-raised: var(--dark-color-surface-raised);
+  --color-surface-glass: var(--dark-color-surface-glass);
+  --color-border: var(--dark-color-border);
+  --color-border-strong: var(--dark-color-border-strong);
+  --color-logo-primary: var(--dark-color-logo-primary);
+  --color-logo-stroke: var(--dark-color-logo-stroke);
+  --color-background-ui: var(--dark-color-background-ui);
+  --color-on-accent: var(--dark-color-on-accent);
+  --color-mid-gray: var(--dark-color-mid-gray);
+  --color-focus: var(--dark-color-focus);
+  --color-recording: var(--dark-color-recording);
+  --color-warning: var(--dark-color-warning);
+  --color-error: var(--dark-color-error);
+  --color-shadow: var(--dark-color-shadow);
+  --color-selection: var(--dark-color-selection);
+  --color-ambient: var(--dark-color-ambient);
+}

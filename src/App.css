@@ -1,0 +1,427 @@
+@import "tailwindcss";
+@import "./styles/theme.css";
+
+/* Register the shared palette as Tailwind utilities. */
+@theme inline {
+  --color-text: var(--color-text);
+  --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-background-ui: var(--color-background-ui);
+  --color-logo-primary: var(--color-logo-primary);
+  --color-logo-stroke: var(--color-logo-stroke);
+  --color-text-stroke: var(--color-text-stroke);
+  --color-mid-gray: var(--color-mid-gray);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+  --color-focus: var(--color-focus);
+  --color-recording: var(--color-recording);
+  --color-warning: var(--color-warning);
+  --color-error: var(--color-error);
+}
+
+:root {
+  font-family:
+    Inter, ui-sans-serif, "Segoe UI Variable Text", "Segoe UI", system-ui,
+    sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+
+  --scrollbar-thumb: color-mix(
+    in srgb,
+    var(--color-logo-primary) 34%,
+    transparent
+  );
+  --scrollbar-thumb-hover: color-mix(
+    in srgb,
+    var(--color-logo-primary) 56%,
+    transparent
+  );
+  --color-log-surface: color-mix(in srgb, var(--color-surface) 88%, black);
+
+  color: var(--color-text);
+  background-color: var(--color-background);
+}
+
+html,
+body,
+#root {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% -8%, var(--color-ambient), transparent 38rem),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--color-background) 96%, var(--color-surface)),
+      var(--color-background) 58%
+    );
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a,
+input,
+select,
+textarea,
+[role="button"] {
+  transition-timing-function: cubic-bezier(0.2, 0.75, 0.3, 1);
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+::selection {
+  color: var(--color-text);
+  background: var(--color-selection);
+}
+
+/* One visible keyboard-focus language across native controls and custom UI. */
+:where(
+  button,
+  a[href],
+  input,
+  select,
+  textarea,
+  [tabindex]:not([tabindex="-1"]),
+  [role="button"]
+):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-focus) 18%, transparent);
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0;
+  padding-top: 10vh;
+  text-align: center;
+}
+
+/* Existing solid primary utilities get the matching accessible foreground. */
+.bg-background-ui,
+.bg-logo-primary,
+.bg-logo-primary\/80 {
+  color: var(--color-on-accent);
+}
+
+/* Reusable restrained glass surface for shells, popovers and future panels. */
+.uxo-glass {
+  background: var(--color-surface-glass);
+  border: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
+  box-shadow:
+    0 18px 48px -32px var(--color-shadow),
+    inset 0 1px 0 color-mix(in srgb, white 9%, transparent);
+  backdrop-filter: blur(14px) saturate(112%);
+}
+
+/* Main application shell: layered, quiet and intentionally low-contrast. */
+.uxo-ambient {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.uxo-ambient::before,
+.uxo-ambient::after {
+  position: absolute;
+  width: 24rem;
+  height: 24rem;
+  content: "";
+  background: var(--color-ambient);
+  border-radius: 999px;
+  filter: blur(84px);
+  opacity: 0.72;
+}
+
+.uxo-ambient::before {
+  inset-block-start: -11rem;
+  inset-inline-start: 9rem;
+}
+
+.uxo-ambient::after {
+  inset-block-end: -15rem;
+  inset-inline-end: -8rem;
+  opacity: 0.44;
+}
+
+.uxo-frame {
+  background: color-mix(in srgb, var(--color-background) 76%, transparent);
+}
+
+.uxo-sidebar {
+  color: var(--color-mid-gray);
+  background: color-mix(in srgb, var(--color-surface-glass) 88%, transparent);
+  border-inline-end: 1px solid
+    color-mix(in srgb, var(--color-border) 72%, transparent);
+  box-shadow: 14px 0 42px -38px var(--color-shadow);
+  backdrop-filter: blur(18px) saturate(112%);
+}
+
+.uxo-sidebar-brand {
+  color: var(--color-text);
+}
+
+.uxo-sidebar-nav {
+  border-color: color-mix(in srgb, var(--color-border) 52%, transparent);
+}
+
+.uxo-nav-item {
+  color: var(--color-mid-gray);
+  border: 1px solid transparent;
+}
+
+.uxo-nav-item:hover {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-logo-primary) 7%, transparent);
+  border-color: color-mix(in srgb, var(--color-logo-primary) 12%, transparent);
+}
+
+.uxo-nav-icon {
+  color: color-mix(in srgb, var(--color-mid-gray) 88%, var(--color-text));
+  background: color-mix(in srgb, var(--color-surface-raised) 74%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 62%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.uxo-nav-item:hover .uxo-nav-icon {
+  color: var(--color-logo-primary);
+  border-color: color-mix(in srgb, var(--color-logo-primary) 28%, transparent);
+}
+
+.uxo-nav-item.is-active {
+  color: var(--color-text);
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--color-logo-primary) 15%, transparent),
+    color-mix(in srgb, var(--color-logo-primary) 7%, transparent)
+  );
+  border-color: color-mix(in srgb, var(--color-logo-primary) 24%, transparent);
+  box-shadow:
+    inset 3px 0 0 var(--color-logo-primary),
+    0 10px 28px -24px var(--color-shadow);
+}
+
+[dir="rtl"] .uxo-nav-item.is-active {
+  box-shadow:
+    inset -3px 0 0 var(--color-logo-primary),
+    0 10px 28px -24px var(--color-shadow);
+}
+
+.uxo-nav-item.is-active .uxo-nav-icon {
+  color: var(--color-logo-primary);
+  background: color-mix(
+    in srgb,
+    var(--color-logo-primary) 12%,
+    var(--color-surface-raised)
+  );
+  border-color: color-mix(in srgb, var(--color-logo-primary) 34%, transparent);
+}
+
+.uxo-sidebar-rail {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-logo-primary) 26%, transparent),
+    transparent
+  );
+}
+
+.uxo-workspace {
+  background: linear-gradient(
+    155deg,
+    color-mix(in srgb, var(--color-background) 90%, transparent),
+    color-mix(in srgb, var(--color-surface) 22%, transparent)
+  );
+}
+
+.uxo-page-header {
+  background: color-mix(in srgb, var(--color-surface-glass) 70%, transparent);
+  border-block-end: 1px solid
+    color-mix(in srgb, var(--color-border) 56%, transparent);
+  backdrop-filter: blur(16px) saturate(108%);
+}
+
+.uxo-page-icon {
+  color: var(--color-logo-primary);
+  background: color-mix(
+    in srgb,
+    var(--color-logo-primary) 11%,
+    var(--color-surface-raised)
+  );
+  border: 1px solid
+    color-mix(in srgb, var(--color-logo-primary) 24%, var(--color-border));
+  box-shadow:
+    0 10px 24px -20px var(--color-shadow),
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
+}
+
+.uxo-page-scroll {
+  scrollbar-gutter: stable;
+}
+
+.uxo-setting-row {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.uxo-setting-row:hover {
+  background-color: color-mix(
+    in srgb,
+    var(--color-logo-primary) 4%,
+    transparent
+  );
+}
+
+.uxo-footer {
+  background: color-mix(in srgb, var(--color-surface-glass) 88%, transparent);
+  border-color: color-mix(in srgb, var(--color-border) 68%, transparent);
+  box-shadow: 0 -12px 34px -32px var(--color-shadow);
+  backdrop-filter: blur(18px) saturate(112%);
+}
+
+.uxo-status-dot {
+  background: var(--color-logo-primary);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--color-logo-primary) 14%, transparent);
+}
+
+.uxo-version-pill {
+  color: var(--color-mid-gray);
+  background: color-mix(in srgb, var(--color-surface-raised) 78%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 62%, transparent);
+}
+
+.uxo-recording-accent {
+  color: var(--color-recording);
+}
+
+/* macOS uses its native overlay scrollbar; tint it to the active palette. */
+:root[data-platform="macos"] {
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+:root:not([data-platform="macos"]) ::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+:root:not([data-platform="macos"]) ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:root:not([data-platform="macos"]) ::-webkit-scrollbar-thumb {
+  min-height: 32px;
+  background-color: var(--scrollbar-thumb);
+  background-clip: content-box;
+  border: 3px solid transparent;
+  border-right-width: 4px;
+  border-radius: 20px;
+}
+
+:root:not([data-platform="macos"]) ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+@layer utilities {
+  .text-stroke {
+    -webkit-text-stroke: 2px var(--color-text-stroke);
+  }
+}
+
+.logo-primary {
+  fill: var(--color-logo-primary);
+}
+
+.logo-stroke {
+  fill: var(--color-logo-stroke);
+  stroke: var(--color-logo-stroke);
+  stroke-width: 1;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .uxo-glass {
+    background: var(--color-surface);
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --scrollbar-thumb: var(--color-border-strong);
+  }
+
+  .uxo-glass {
+    border-color: var(--color-border-strong);
+    box-shadow: none;
+  }
+
+  :where(
+    button,
+    a[href],
+    input,
+    select,
+    textarea,
+    [tabindex]:not([tabindex="-1"]),
+    [role="button"]
+  ):focus-visible {
+    outline-width: 3px;
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :where(
+    button,
+    a[href],
+    input,
+    select,
+    textarea,
+    [tabindex]:not([tabindex="-1"]),
+    [role="button"]
+  ):focus-visible {
+    outline: 2px solid Highlight;
+    box-shadow: none;
+  }
+}

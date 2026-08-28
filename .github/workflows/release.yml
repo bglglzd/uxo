@@ -1,0 +1,129 @@
+name: Prepare Windows preview release
+
+on:
+  workflow_dispatch:
+    inputs:
+      prepare_unsigned_preview:
+        description: Create an unsigned, draft prerelease from the version in source files
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: prepare-preview-release
+  cancel-in-progress: false
+
+jobs:
+  prepare-release:
+    if: inputs.prepare_unsigned_preview
+    name: Create draft prerelease
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      release-id: ${{ steps.create.outputs.release-id }}
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Verify release version metadata
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          tauri_version="$(jq -r '.version' src-tauri/tauri.conf.json)"
+          package_version="$(jq -r '.version' package.json)"
+          cargo_version="$(sed -nE 's/^version[[:space:]]*=[[:space:]]*"([^"]+)"/\1/p' src-tauri/Cargo.toml | head -1)"
+          if [[ -z "$tauri_version" || "$tauri_version" != "$package_version" || "$tauri_version" != "$cargo_version" ]]; then
+            echo "Version mismatch: tauri=$tauri_version package=$package_version cargo=$cargo_version" >&2
+            exit 1
+          fi
+          echo "version=$tauri_version" >> "$GITHUB_OUTPUT"
+
+      - name: Create unsigned preview draft
+        id: create
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        with:
+          script: |
+            const tag = `v${process.env.VERSION}`;
+            try {
+              const { data: existing } = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag,
+              });
+              if (!existing.draft || !existing.prerelease) {
+                core.setFailed(`A non-draft or non-prerelease release for ${tag} already exists.`);
+                return;
+              }
+              if (existing.target_commitish !== context.sha) {
+                core.setFailed(
+                  `Existing ${tag} draft targets ${existing.target_commitish}, not this workflow commit ${context.sha}.`,
+                );
+                return;
+              }
+              try {
+                await github.rest.git.getRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${tag}`,
+                });
+                core.setFailed(`The tag ${tag} already exists; refusing to reuse its draft.`);
+                return;
+              } catch (error) {
+                if (error.status !== 404) throw error;
+              }
+              core.info(`Reusing existing draft prerelease ${existing.id} for ${tag}.`);
+              core.setOutput('release-id', String(existing.id));
+              return;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+
+            try {
+              await github.rest.git.getRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `tags/${tag}`,
+              });
+              core.setFailed(`The tag ${tag} already exists.`);
+              return;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+
+            const { data: release } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              target_commitish: context.sha,
+              name: `UXO ${tag} Preview`,
+              body: [
+                '> [!WARNING]',
+                '> This workflow creates **unsigned Windows x64 preview** installers.',
+                '> Review the generated installers, smoke-test them, and verify `SHA256SUMS.txt` before publishing this draft.',
+                '',
+                'The release remains a draft until a maintainer publishes it manually.',
+              ].join('\n'),
+              draft: true,
+              prerelease: true,
+              make_latest: 'false',
+            });
+            core.setOutput('release-id', String(release.id));
+
+  package:
+    needs: prepare-release
+    permissions:
+      contents: write
+    uses: ./.github/workflows/build.yml
+    with:
+      ref: ${{ github.sha }}
+      release-id: ${{ needs.prepare-release.outputs.release-id }}
+      upload-artifacts: true
+      no-cache: true

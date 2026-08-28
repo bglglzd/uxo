@@ -1,0 +1,17 @@
+name: Windows x64 package
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: windows-package-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/build.yml
+    with:
+      upload-artifacts: true
+      no-cache: false
