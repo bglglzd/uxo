@@ -4,6 +4,11 @@ use std::path::PathBuf;
 #[derive(Parser, Debug, Clone, Default)]
 #[command(name = "uxo", about = "UXO - fast local speech to text")]
 pub struct CliArgs {
+    /// Internal handoff guard used by the session-only Windows administrator restart.
+    /// The replacement waits for this process to exit before single-instance setup.
+    #[arg(long, hide = true, value_name = "PID")]
+    pub wait_for_pid: Option<u32>,
+
     /// Start with the main window hidden
     #[arg(long)]
     pub start_hidden: bool,

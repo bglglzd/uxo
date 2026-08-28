@@ -256,6 +256,13 @@
         "history": "Historia",
         "experimental": "Eksperymentalne"
       },
+      "elevatedInput": {
+        "title": "Wprowadzanie tekstu w aplikacjach administratora",
+        "description": "System Windows blokuje zwykłym aplikacjom wprowadzanie tekstu w oknach uruchomionych jako administrator. Uruchom UXO ponownie jako administrator w tej sesji, aby móc w nich dyktować.",
+        "restart": "Uruchom ponownie jako administrator",
+        "active": "Tryb administratora jest aktywny",
+        "restarting": "Prośba o uprawnienia…"
+      },
       "experimentalToggle": {
         "label": "Funkcje Eksperymentalne",
         "description": "Włącz funkcje eksperymentalne, które są jeszcze w fazie rozwoju."
@@ -652,6 +659,10 @@
     "modelLoadFailedUnknown": "nieznany model",
     "pasteFailedTitle": "Nie udało się wkleić tekstu",
     "pasteFailed": "Nie można było wkleić tekstu do aktywnej aplikacji.",
+    "elevatedPasteTitle": "Wymagany jest dostęp administratora",
+    "elevatedPaste": "Aplikacja docelowa działa jako administrator. Transkrypcja została skopiowana do schowka.",
+    "elevatedPasteAction": "Uruchom ponownie UXO",
+    "elevatedRestartFailed": "Nie udało się uruchomić UXO ponownie jako administrator.",
     "transcriptionFailedTitle": "Transkrypcja nie powiodła się"
   },
   "appLanguage": {

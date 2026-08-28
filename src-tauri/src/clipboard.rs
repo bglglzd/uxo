@@ -8,23 +8,89 @@ use std::process::Command;
 #[cfg(target_os = "linux")]
 use std::sync::OnceLock;
 use std::time::Duration;
+use std::{error::Error, fmt};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[cfg(target_os = "linux")]
 use crate::utils::{is_kde_wayland, is_wayland};
 
-fn with_enigo<T>(
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PasteError {
+    code: &'static str,
+    message: String,
+}
+
+impl PasteError {
+    fn new(code: &'static str, message: impl Into<String>) -> Self {
+        Self {
+            code,
+            message: message.into(),
+        }
+    }
+
+    pub fn code(&self) -> &'static str {
+        self.code
+    }
+
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+}
+
+impl fmt::Display for PasteError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(&self.message)
+    }
+}
+
+impl Error for PasteError {}
+
+impl From<String> for PasteError {
+    fn from(message: String) -> Self {
+        Self::new("paste_failed", message)
+    }
+}
+
+impl From<&str> for PasteError {
+    fn from(message: &str) -> Self {
+        Self::new("paste_failed", message)
+    }
+}
+
+fn paste_error_with_clipboard_fallback(
     app_handle: &AppHandle,
-    f: impl FnOnce(&mut Enigo) -> Result<T, String>,
-) -> Result<T, String> {
+    text: &str,
+    error: String,
+) -> PasteError {
+    match write_text_to_clipboard(app_handle, text) {
+        Ok(()) => PasteError::new(
+            "paste_failed",
+            format!("{error}. The transcription was copied to the clipboard."),
+        ),
+        Err(clipboard_error) => PasteError::new(
+            "paste_failed",
+            format!(
+                "{error}. UXO also could not copy the transcription to the clipboard: {clipboard_error}"
+            ),
+        ),
+    }
+}
+
+fn with_enigo<T, E>(
+    app_handle: &AppHandle,
+    f: impl FnOnce(&mut Enigo) -> Result<T, E>,
+) -> Result<T, E>
+where
+    E: From<String>,
+{
     let enigo_state = app_handle
         .try_state::<EnigoState>()
-        .ok_or("Enigo state not initialized")?;
+        .ok_or_else(|| E::from("Enigo state not initialized".to_string()))?;
     let mut enigo = enigo_state
         .0
         .lock()
-        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
+        .map_err(|e| E::from(format!("Failed to lock Enigo: {}", e)))?;
     f(&mut enigo)
 }
 
@@ -762,7 +828,7 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
     auto_submit && paste_method != PasteMethod::None
 }
 
-pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
+pub fn paste(text: String, app_handle: AppHandle) -> Result<(), PasteError> {
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
     let paste_delay_ms = settings.paste_delay_ms;
@@ -774,6 +840,42 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     } else {
         text
     };
+
+    // UIPI blocks both Enigo's direct typing and its paste-key injection when
+    // the foreground process has a higher Windows integrity level. Detect that
+    // boundary before publishing a transient reliable-paste promise. Keeping
+    // the transcript as ordinary clipboard text gives the user a safe manual
+    // fallback and prevents the current path from reporting a false success.
+    #[cfg(target_os = "windows")]
+    if matches!(
+        paste_method,
+        PasteMethod::CtrlV
+            | PasteMethod::CtrlShiftV
+            | PasteMethod::ShiftInsert
+            | PasteMethod::Direct
+    ) {
+        match crate::windows_input::foreground_requires_elevation() {
+            Ok(true) => {
+                let clipboard_result = write_text_to_clipboard(&app_handle, &text);
+                return match clipboard_result {
+                    Ok(()) => Err(PasteError::new(
+                        crate::windows_input::ELEVATED_TARGET_ERROR_CODE,
+                        "The foreground application is running as administrator. The transcription was copied to the clipboard; restart UXO as administrator for this session to paste automatically.",
+                    )),
+                    Err(error) => Err(PasteError::new(
+                        "paste_failed",
+                        format!(
+                            "The foreground application is running as administrator, and UXO could not copy the transcription to the clipboard: {error}"
+                        ),
+                    )),
+                };
+            }
+            Ok(false) => {}
+            Err(error) => log::warn!(
+                "Could not compare Windows input integrity levels; attempting paste normally: {error}"
+            ),
+        }
+    }
 
     info!(
         "Using paste method: {:?}, delay before: {}ms, delay after: {}ms",
@@ -791,14 +893,15 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                 &app_handle,
                 #[cfg(target_os = "linux")]
                 settings.typing_tool,
-            )?;
+            )
+            .map_err(|error| paste_error_with_clipboard_fallback(&app_handle, &text, error))?;
         }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
             // Debug-gated receipt-sequenced paste (#502): restore the clipboard
             // after the target actually reads the transcript, not on a timer.
-            // On success it fully handles the paste (including auto-submit and
-            // clipboard handling) asynchronously; on failure fall through to
-            // the legacy path untouched.
+            // A setup failure occurs before key injection and may safely use
+            // the legacy path. Once chord injection begins, however, an input
+            // error is ambiguous; retrying could paste the transcript twice.
             #[cfg(any(target_os = "macos", target_os = "windows"))]
             if settings.reliable_paste {
                 let reliable_result = with_enigo(&app_handle, |enigo| {
@@ -814,8 +917,20 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                 });
                 match reliable_result {
                     Ok(()) => return Ok(()),
-                    Err(e) => {
-                        log::warn!("Reliable paste unavailable ({e}); falling back to legacy paste")
+                    Err(error) if error.legacy_retry_is_safe() => {
+                        log::warn!(
+                            "Reliable paste unavailable ({error}); falling back to legacy paste"
+                        )
+                    }
+                    Err(error) => {
+                        log::error!(
+                            "Reliable paste chord may have partially executed; refusing duplicate retry: {error}"
+                        );
+                        return Err(paste_error_with_clipboard_fallback(
+                            &app_handle,
+                            &text,
+                            format!("Paste input failed after injection began: {error}"),
+                        ));
                     }
                 }
             }
@@ -825,15 +940,50 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                 &paste_method,
                 paste_delay_ms,
                 paste_delay_after_ms,
-            )?
+            )
+            .map_err(|error| paste_error_with_clipboard_fallback(&app_handle, &text, error))?
         }
         PasteMethod::ExternalScript => {
+            // The administrator compatibility mode elevates the full UXO
+            // process for this Preview. Never let a script path from mutable
+            // per-user settings inherit that token. Keep the transcript on
+            // the clipboard instead; a future signed, minimal input helper can
+            // provide a narrower privilege boundary.
+            #[cfg(target_os = "windows")]
+            match crate::windows_input::current_process_is_elevated() {
+                Ok(false) => {}
+                Ok(true) => {
+                    return Err(paste_error_with_clipboard_fallback(
+                        &app_handle,
+                        &text,
+                        "External-script paste is disabled while UXO is running as administrator"
+                            .to_string(),
+                    ));
+                }
+                Err(error) => {
+                    return Err(paste_error_with_clipboard_fallback(
+                        &app_handle,
+                        &text,
+                        format!(
+                            "UXO could not verify its Windows integrity level, so external-script paste was blocked: {error}"
+                        ),
+                    ));
+                }
+            }
+
             let script_path = settings
                 .external_script_path
                 .as_ref()
                 .filter(|p| !p.is_empty())
-                .ok_or("External script path is not configured")?;
-            paste_via_external_script(&text, script_path)?;
+                .ok_or_else(|| {
+                    paste_error_with_clipboard_fallback(
+                        &app_handle,
+                        &text,
+                        "External script path is not configured".to_string(),
+                    )
+                })?;
+            paste_via_external_script(&text, script_path)
+                .map_err(|error| paste_error_with_clipboard_fallback(&app_handle, &text, error))?;
         }
     }
 

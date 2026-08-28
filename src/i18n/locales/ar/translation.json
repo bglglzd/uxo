@@ -233,6 +233,13 @@
         "history": "السجل",
         "experimental": "تجريبي"
       },
+      "elevatedInput": {
+        "title": "إدخال النص في تطبيقات المسؤول",
+        "description": "يمنع Windows التطبيقات العادية من الكتابة داخل النوافذ التي تعمل بصلاحيات المسؤول. أعد تشغيل UXO بصلاحيات المسؤول لهذه الجلسة للإملاء فيها.",
+        "restart": "إعادة التشغيل بصلاحيات المسؤول",
+        "active": "وضع المسؤول نشط",
+        "restarting": "جارٍ طلب الإذن…"
+      },
       "experimentalToggle": {
         "label": "الميزات التجريبية",
         "description": ".تمكين الميزات التجريبية التي لا تزال قيد التطوير"
@@ -652,6 +659,10 @@
     "modelLoadFailedUnknown": "نموذج غير معروف",
     "pasteFailedTitle": "فشل لصق النص",
     "pasteFailed": "تعذر لصق النص في التطبيق النشط.",
+    "elevatedPasteTitle": "يلزم الوصول بصلاحيات المسؤول",
+    "elevatedPaste": "يعمل التطبيق المستهدف بصلاحيات المسؤول. تم نسخ النص المفرّغ إلى الحافظة.",
+    "elevatedPasteAction": "إعادة تشغيل UXO",
+    "elevatedRestartFailed": "تعذّر على UXO إعادة التشغيل بصلاحيات المسؤول.",
     "transcriptionFailedTitle": "فشل التفريغ النصي"
   },
   "appLanguage": {

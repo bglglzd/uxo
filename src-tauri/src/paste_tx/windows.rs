@@ -19,13 +19,14 @@ use std::thread;
 use std::time::Instant;
 
 use log::{error, info, warn};
-use tauri::Manager;
+use tauri::{Emitter, Manager};
+use tauri_plugin_clipboard_manager::ClipboardExt;
 use windows::core::{w, PCWSTR};
 use windows::Win32::Foundation::{
     SetLastError, ERROR_SUCCESS, HANDLE, HGLOBAL, HINSTANCE, HWND, LPARAM, LRESULT, WPARAM,
 };
 
-use super::{evaluate, send_chord, TxState, WaitDecision};
+use super::{evaluate, send_chord, ReliablePasteError, TxState, WaitDecision};
 use crate::clipboard::send_return_key;
 use crate::input::EnigoState;
 use crate::settings::{AutoSubmitKey, ClipboardHandling, PasteMethod};
@@ -63,6 +64,12 @@ struct SavedFormat {
     data: Vec<u8>,
 }
 
+#[derive(Clone, serde::Serialize)]
+struct PasteFailureEvent {
+    code: &'static str,
+    message: String,
+}
+
 pub(super) struct WinTxShared {
     state: Mutex<TxState>,
     text: String,
@@ -81,6 +88,29 @@ pub(super) struct WinTxShared {
 /// The transaction currently holding the clipboard, if any. A new
 /// transaction settles it before snapshotting (see `flush_pending`).
 static PENDING: Mutex<Option<Arc<WinTxShared>>> = Mutex::new(None);
+
+fn is_unconfirmed_timeout(state: &TxState, now: Instant) -> bool {
+    !state.cancelled
+        && !state.ownership_lost
+        && !state.injection_failed
+        && !state.any_receipt_after_injection()
+        && now.saturating_duration_since(state.published_at) >= super::RESTORE_TIMEOUT
+}
+
+fn report_unconfirmed_paste(shared: &WinTxShared, recovery: Result<(), String>) {
+    let message = match recovery {
+        Ok(()) => "UXO could not confirm that the target read the transcription. The transcription was kept on the clipboard so it can be pasted manually.".to_string(),
+        Err(error) => format!(
+            "UXO could not confirm that the target read the transcription and could not preserve it on the clipboard: {error}"
+        ),
+    };
+    let payload = PasteFailureEvent {
+        code: "paste_failed",
+        message,
+    };
+    let _ = shared.app_handle.emit("paste-error", payload);
+    crate::show_main_window(&shared.app_handle);
+}
 
 fn wide(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(std::iter::once(0)).collect()
@@ -116,25 +146,26 @@ fn send_auto_submit(shared: &WinTxShared) {
 /// Renders the promised transcript into the clipboard, which must already be
 /// open: the system opens it on our behalf for WM_RENDERFORMAT; every other
 /// caller has to wrap this in OpenClipboard/CloseClipboard itself.
-unsafe fn render_text(shared: &WinTxShared) {
+unsafe fn render_text(shared: &WinTxShared) -> Result<(), String> {
     let wide_text: Vec<u16> = shared
         .text
         .encode_utf16()
         .chain(std::iter::once(0))
         .collect();
-    let Ok(hg) = GlobalAlloc(GMEM_MOVEABLE, wide_text.len() * 2) else {
-        return;
-    };
+    let hg = GlobalAlloc(GMEM_MOVEABLE, wide_text.len() * 2)
+        .map_err(|error| format!("GlobalAlloc failed: {error}"))?;
     let ptr = GlobalLock(hg) as *mut u16;
     if ptr.is_null() {
         let _ = GlobalFree(Some(hg));
-        return;
+        return Err("GlobalLock failed while rendering clipboard text".to_string());
     }
     std::ptr::copy_nonoverlapping(wide_text.as_ptr(), ptr, wide_text.len());
     let _ = GlobalUnlock(hg);
-    if SetClipboardData(CF_UNICODETEXT.0 as u32, Some(HANDLE(hg.0))).is_err() {
+    if let Err(error) = SetClipboardData(CF_UNICODETEXT.0 as u32, Some(HANDLE(hg.0))) {
         let _ = GlobalFree(Some(hg));
+        return Err(format!("SetClipboardData failed: {error}"));
     }
+    Ok(())
 }
 
 unsafe extern "system" fn paste_wnd_proc(
@@ -152,7 +183,7 @@ unsafe extern "system" fn paste_wnd_proc(
                     st.record_receipt(Instant::now());
                 }
                 if wparam.0 as u32 == CF_UNICODETEXT.0 as u32 {
-                    render_text(shared);
+                    let _ = render_text(shared);
                 }
             }
             LRESULT(0)
@@ -169,7 +200,7 @@ unsafe extern "system" fn paste_wnd_proc(
                         .map(|owner| owner == hwnd)
                         .unwrap_or(false)
                     {
-                        render_text(shared);
+                        let _ = render_text(shared);
                     }
                     let _ = CloseClipboard();
                 }
@@ -239,6 +270,38 @@ fn flush_pending() {
     }
 }
 
+/// Abort a transaction whose input chord was rejected. Enigo errors are
+/// ambiguous: the key event may have reached the target before the failure was
+/// reported. Keep the transcript as ordinary clipboard text so a partially
+/// executed paste still reads the right value and the user has a manual
+/// fallback. The caller must not inject a second, legacy paste chord.
+fn abort_failed_injection(shared: &Arc<WinTxShared>) {
+    if let Ok(mut state) = shared.state.lock() {
+        state.injection_failed = true;
+        state.cancelled = true;
+        // Prevent the worker from settling a second time if its timer races
+        // this synchronous restoration.
+        state.ownership_lost = true;
+    }
+
+    if let Ok(mut slot) = PENDING.lock() {
+        let is_current = slot
+            .as_ref()
+            .map(|pending| Arc::ptr_eq(pending, shared))
+            .unwrap_or(false);
+        if is_current {
+            *slot = None;
+        }
+    }
+
+    let sequence = *shared.sequence.lock().unwrap();
+    if unsafe { GetClipboardSequenceNumber() } == sequence {
+        if let Err(error) = unsafe { leave_transcript_as_plain_text(shared) } {
+            warn!("[reliable-paste] could not preserve transcript after chord failure: {error}");
+        }
+    }
+}
+
 /// Settle-time clipboard handling once we know we still own the clipboard:
 /// restore the snapshot, or — for ClipboardHandling::CopyToClipboard — replace
 /// the concealed promise with plain transcript text, so clipboard history and
@@ -248,14 +311,40 @@ unsafe fn settle_clipboard(shared: &WinTxShared) {
         restore_snapshot(shared);
         return;
     }
-    if OpenClipboard(None).is_err() {
-        warn!("[reliable-paste] could not open clipboard to leave transcript");
-        return;
+    if let Err(error) = leave_transcript_as_plain_text(shared) {
+        warn!("[reliable-paste] could not leave transcript on clipboard: {error}");
     }
-    let _ = EmptyClipboard();
-    render_text(shared);
-    let _ = CloseClipboard();
+}
+
+/// Replaces the delayed-render promise with a normal CF_UNICODETEXT value.
+/// This is the recovery state for an unconfirmed or uncertain paste: it
+/// survives the owner window and is available for an explicit Ctrl+V.
+unsafe fn leave_transcript_as_plain_text(shared: &WinTxShared) -> Result<(), String> {
+    OpenClipboard(None).map_err(|error| format!("OpenClipboard failed: {error}"))?;
+    let write_result = (|| {
+        EmptyClipboard().map_err(|error| format!("EmptyClipboard failed: {error}"))?;
+        render_text(shared)
+    })();
+    let close_result = CloseClipboard().map_err(|error| format!("CloseClipboard failed: {error}"));
+    write_result?;
+    close_result?;
     info!("[reliable-paste] left transcript on clipboard as plain text");
+    Ok(())
+}
+
+fn preserve_transcript_for_recovery(shared: &WinTxShared) -> Result<(), String> {
+    match unsafe { leave_transcript_as_plain_text(shared) } {
+        Ok(()) => Ok(()),
+        Err(native_error) => shared
+            .app_handle
+            .clipboard()
+            .write_text(&shared.text)
+            .map_err(|plugin_error| {
+                format!(
+                    "native clipboard recovery failed ({native_error}); clipboard plugin recovery failed ({plugin_error})"
+                )
+            }),
+    }
 }
 
 /// Restores the snapshotted clipboard contents. Safe to call from any thread.
@@ -412,19 +501,20 @@ unsafe fn publish_formats() -> Result<(), String> {
 
 fn on_timer(_hwnd: HWND, shared: &WinTxShared) {
     let now = Instant::now();
-    let finish = {
+    let (finish, unconfirmed_timeout) = {
         let mut st = match shared.state.lock() {
             Ok(st) => st,
             Err(_) => return,
         };
         if st.cancelled {
-            true
+            (true, false)
         } else {
             match evaluate(&st, now) {
-                WaitDecision::KeepWaiting => false,
+                WaitDecision::KeepWaiting => (false, false),
                 WaitDecision::Finish => {
+                    let unconfirmed_timeout = is_unconfirmed_timeout(&st, now);
                     st.cancelled = true;
-                    true
+                    (true, unconfirmed_timeout)
                 }
             }
         }
@@ -450,8 +540,10 @@ fn on_timer(_hwnd: HWND, shared: &WinTxShared) {
         info!("[reliable-paste] settling: reads went quiet");
     } else if injection_failed {
         info!("[reliable-paste] settling: chord injection failed, restoring quickly");
+    } else if unconfirmed_timeout {
+        warn!("[reliable-paste] settling: no read within timeout; preserving recovery text");
     } else {
-        info!("[reliable-paste] settling: no read within timeout, restoring anyway");
+        info!("[reliable-paste] settling: transaction cancelled without a read");
     }
 
     // Auto-submit only once the target demonstrably read the transcript;
@@ -462,11 +554,17 @@ fn on_timer(_hwnd: HWND, shared: &WinTxShared) {
 
     let sequence = *shared.sequence.lock().unwrap();
     let still_ours = !ownership_lost && unsafe { GetClipboardSequenceNumber() } == sequence;
-    if still_ours {
+    let recovery = if still_ours && unconfirmed_timeout {
+        Some(preserve_transcript_for_recovery(shared))
+    } else if still_ours {
         unsafe { settle_clipboard(shared) };
+        None
     } else {
         info!("[reliable-paste] clipboard changed externally; leaving it untouched");
-    }
+        unconfirmed_timeout.then(|| {
+            Err("the clipboard changed before UXO could preserve the transcription".to_string())
+        })
+    };
 
     if let Ok(mut slot) = PENDING.lock() {
         let is_us = slot
@@ -476,6 +574,13 @@ fn on_timer(_hwnd: HWND, shared: &WinTxShared) {
         if is_us {
             *slot = None;
         }
+    }
+
+    // Only the asynchronous no-receipt timeout reports here. Immediate
+    // publication/chord errors return to `clipboard::paste`, which emits the
+    // same structured event once through the normal action error path.
+    if let Some(recovery) = recovery {
+        report_unconfirmed_paste(shared, recovery);
     }
 
     unsafe {
@@ -579,7 +684,7 @@ pub(super) fn run(
     auto_submit: bool,
     auto_submit_key: AutoSubmitKey,
     clipboard_handling: ClipboardHandling,
-) -> Result<(), String> {
+) -> Result<(), ReliablePasteError> {
     let shared = Arc::new(WinTxShared {
         state: Mutex::new(TxState::new()),
         text: text.to_string(),
@@ -600,8 +705,12 @@ pub(super) fn run(
     // why it could not) before injecting the chord.
     match ready_rx.recv() {
         Ok(Ok(())) => {}
-        Ok(Err(e)) => return Err(e),
-        Err(_) => return Err("reliable paste worker died before publishing".to_string()),
+        Ok(Err(e)) => return Err(ReliablePasteError::Unavailable(e)),
+        Err(_) => {
+            return Err(ReliablePasteError::Unavailable(
+                "reliable paste worker died before publishing".to_string(),
+            ))
+        }
     }
     info!("[reliable-paste] published transcript (delayed render)");
 
@@ -613,12 +722,47 @@ pub(super) fn run(
             info!("[reliable-paste] paste chord sent ({paste_method:?})");
         }
         Err(e) => {
-            // Keep the transaction alive: the worker restores the clipboard
-            // after the short failed-injection timeout.
-            shared.state.lock().unwrap().injection_failed = true;
             error!("[reliable-paste] failed to send paste chord: {e}");
+            abort_failed_injection(&shared);
+            return Err(ReliablePasteError::ChordMayHaveExecuted(e));
         }
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    fn state_at_timeout() -> TxState {
+        let mut state = TxState::new();
+        state.published_at =
+            Instant::now() - super::super::RESTORE_TIMEOUT - Duration::from_millis(1);
+        state.injected_at = Some(Instant::now() - Duration::from_secs(1));
+        state
+    }
+
+    #[test]
+    fn only_a_live_no_receipt_deadline_is_an_unconfirmed_timeout() {
+        let now = Instant::now();
+        assert!(is_unconfirmed_timeout(&state_at_timeout(), now));
+
+        let mut with_receipt = state_at_timeout();
+        with_receipt.receipts.push(now - Duration::from_millis(1));
+        assert!(!is_unconfirmed_timeout(&with_receipt, now));
+
+        let mut failed_injection = state_at_timeout();
+        failed_injection.injection_failed = true;
+        assert!(!is_unconfirmed_timeout(&failed_injection, now));
+
+        let mut cancelled = state_at_timeout();
+        cancelled.cancelled = true;
+        assert!(!is_unconfirmed_timeout(&cancelled, now));
+
+        let mut ownership_lost = state_at_timeout();
+        ownership_lost.ownership_lost = true;
+        assert!(!is_unconfirmed_timeout(&ownership_lost, now));
+    }
 }

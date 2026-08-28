@@ -1,6 +1,6 @@
 # Third-party notices
 
-This document records the software, native runtimes, and model artifacts relevant to the UXO v0.1.0 Windows x64 release. It supplements the license texts shipped in `resources/legal`; it does not replace the terms of any dependency or separately downloaded model.
+This document records the software, native runtimes, and model artifacts relevant to the UXO v0.1.1 Windows x64 release. It supplements the license texts shipped in `resources/legal`; it does not replace the terms of any dependency or separately downloaded model.
 
 ## UXO application provenance
 
@@ -15,7 +15,7 @@ and do not imply affiliation or endorsement.
 
 ## Files bundled in the Windows x64 release
 
-The v0.1.0 Windows x64 installer contains the UXO application, its embedded web interface, application icons and audio feedback assets, and these material native/model components:
+The v0.1.1 Windows x64 installer contains the UXO application, its embedded web interface, application icons and audio feedback assets, and these material native/model components:
 
 | Component                               | Bundled files or artifact                                                                                                                                                        | License / notice                                                                                                                  |
 | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
@@ -40,7 +40,7 @@ The Rust crates and JavaScript packages used to build UXO are pinned in `Cargo.l
 
 The Windows installer does **not** bundle the user-selectable speech-recognition model weights. UXO downloads a model only after the user chooses one. Each checkpoint remains governed by its own model card, license, acceptable-use terms, and attribution requirements; UXO's MIT License does not relicense those weights.
 
-The recommended model in v0.1.0 is pinned as follows:
+The recommended model in v0.1.1 is pinned as follows:
 
 | Field                                      | Value                                                                                                                               |
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |

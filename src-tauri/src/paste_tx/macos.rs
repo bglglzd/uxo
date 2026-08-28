@@ -24,7 +24,7 @@ use objc2_foundation::{NSArray, NSInteger, NSObject, NSString};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
-use super::{evaluate, send_chord, TxState, WaitDecision};
+use super::{evaluate, send_chord, ReliablePasteError, TxState, WaitDecision};
 use crate::clipboard::send_return_key;
 use crate::input::EnigoState;
 use crate::settings::{AutoSubmitKey, ClipboardHandling, PasteMethod};
@@ -261,7 +261,7 @@ pub(super) fn run(
     auto_submit: bool,
     auto_submit_key: AutoSubmitKey,
     clipboard_handling: ClipboardHandling,
-) -> Result<(), String> {
+) -> Result<(), ReliablePasteError> {
     // Settle any previous transaction first so the snapshot below captures the
     // user's original clipboard, not the previous transcript.
     flush_pending(app_handle, enigo);
@@ -292,7 +292,9 @@ pub(super) fn run(
     let change_count: NSInteger =
         unsafe { msg_send![&*pasteboard, declareTypes: &*types, owner: &*provider] };
     if change_count <= 0 {
-        return Err("declareTypes:owner: failed".to_string());
+        return Err(ReliablePasteError::Unavailable(
+            "declareTypes:owner: failed".to_string(),
+        ));
     }
     info!("[reliable-paste] published transcript as lazy promise (changeCount {change_count})");
 
@@ -301,19 +303,22 @@ pub(super) fn run(
     if let Ok(mut st) = state.lock() {
         st.injected_at = Some(Instant::now());
     }
-    match send_chord(enigo, paste_method) {
+    let chord_error = match send_chord(enigo, paste_method) {
         Ok(()) => {
             info!("[reliable-paste] paste chord sent ({paste_method:?})");
+            None
         }
         Err(e) => {
-            // Keep the transaction alive: the waiter restores the clipboard
-            // after the short failed-injection timeout.
+            // Keep the owner alive until the caller replaces this promise with
+            // ordinary clipboard recovery text. The waiter observes that
+            // ownership change and will not restore stale clipboard content.
             if let Ok(mut st) = state.lock() {
                 st.injection_failed = true;
             }
             error!("[reliable-paste] failed to send paste chord: {e}");
+            Some(e)
         }
-    }
+    };
 
     let pending = Arc::new(Mutex::new(MacPending {
         state,
@@ -332,5 +337,8 @@ pub(super) fn run(
     }
     spawn_waiter(pending, app_handle.clone());
 
-    Ok(())
+    match chord_error {
+        Some(error) => Err(ReliablePasteError::ChordMayHaveExecuted(error)),
+        None => Ok(()),
+    }
 }

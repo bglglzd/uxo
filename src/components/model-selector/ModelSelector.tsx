@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { commands } from "@/bindings";
@@ -39,12 +39,38 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   const [modelStatus, setModelStatus] = useState<ModelStatus>("unloaded");
   const [modelError, setModelError] = useState<string | null>(null);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [activeModelIndex, setActiveModelIndex] = useState(-1);
   // Track pending model switch for optimistic display
   const [pendingModelId, setPendingModelId] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownTriggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownMenuRef = useRef<HTMLDivElement>(null);
+  const dropdownId = useId();
+  const triggerId = `uxo-model-trigger-${dropdownId}`;
+  const listboxId = `uxo-model-listbox-${dropdownId}`;
 
   const displayModelId = pendingModelId || currentModel;
+  const downloadedModels = models.filter((model) => model.is_downloaded);
+  const selectedModelIndex = downloadedModels.findIndex(
+    (model) => model.id === displayModelId,
+  );
+  const effectiveActiveModelIndex = downloadedModels[activeModelIndex]
+    ? activeModelIndex
+    : selectedModelIndex >= 0
+      ? selectedModelIndex
+      : downloadedModels.length > 0
+        ? 0
+        : -1;
+
+  useEffect(() => {
+    if (!showModelDropdown || effectiveActiveModelIndex < 0) return;
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById(`${listboxId}-option-${effectiveActiveModelIndex}`)
+        ?.scrollIntoView({ block: "nearest" });
+    });
+  }, [effectiveActiveModelIndex, listboxId, showModelDropdown]);
 
   // Check model status when currentModel changes
   useEffect(() => {
@@ -125,7 +151,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
+        !dropdownRef.current.contains(event.target as Node) &&
+        !dropdownMenuRef.current?.contains(event.target as Node)
       ) {
         setShowModelDropdown(false);
       }
@@ -144,12 +171,85 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
     setPendingModelId(modelId);
     setModelError(null);
     setShowModelDropdown(false);
+    dropdownTriggerRef.current?.focus();
     const success = await selectModel(modelId);
     if (!success) {
       setPendingModelId(null);
       setModelStatus("error");
       setModelError("Failed to switch model");
       onError?.("Failed to switch model");
+    }
+  };
+
+  const openModelDropdown = (preferLast = false) => {
+    setActiveModelIndex(
+      selectedModelIndex >= 0
+        ? selectedModelIndex
+        : preferLast
+          ? Math.max(0, downloadedModels.length - 1)
+          : 0,
+    );
+    setShowModelDropdown(true);
+  };
+
+  const handleModelDropdownToggle = () => {
+    if (showModelDropdown) {
+      setShowModelDropdown(false);
+    } else {
+      openModelDropdown();
+    }
+  };
+
+  const moveActiveModel = (direction: 1 | -1) => {
+    if (downloadedModels.length === 0) return;
+    setActiveModelIndex(
+      (effectiveActiveModelIndex + direction + downloadedModels.length) %
+        downloadedModels.length,
+    );
+  };
+
+  const handleModelTriggerKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+  ) => {
+    switch (event.key) {
+      case "ArrowDown":
+      case "ArrowUp":
+        event.preventDefault();
+        if (!showModelDropdown) {
+          openModelDropdown(event.key === "ArrowUp");
+        } else {
+          moveActiveModel(event.key === "ArrowDown" ? 1 : -1);
+        }
+        break;
+      case "Home":
+      case "End":
+        event.preventDefault();
+        if (!showModelDropdown) setShowModelDropdown(true);
+        setActiveModelIndex(
+          event.key === "Home" ? 0 : Math.max(0, downloadedModels.length - 1),
+        );
+        break;
+      case "Enter":
+      case " ":
+        event.preventDefault();
+        if (showModelDropdown && effectiveActiveModelIndex >= 0) {
+          void handleModelSelect(
+            downloadedModels[effectiveActiveModelIndex].id,
+          );
+        } else {
+          openModelDropdown();
+        }
+        break;
+      case "Escape":
+        if (showModelDropdown) {
+          event.preventDefault();
+          setShowModelDropdown(false);
+          dropdownTriggerRef.current?.focus();
+        }
+        break;
+      case "Tab":
+        setShowModelDropdown(false);
+        break;
     }
   };
 
@@ -247,17 +347,32 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       {/* Model Status and Switcher */}
       <div className="relative" ref={dropdownRef}>
         <ModelStatusButton
+          ref={dropdownTriggerRef}
+          triggerId={triggerId}
+          listboxId={listboxId}
+          activeDescendant={
+            showModelDropdown && effectiveActiveModelIndex >= 0
+              ? `${listboxId}-option-${effectiveActiveModelIndex}`
+              : undefined
+          }
           status={getDisplayStatus()}
           displayText={getModelDisplayText()}
           isDropdownOpen={showModelDropdown}
-          onClick={() => setShowModelDropdown(!showModelDropdown)}
+          onClick={handleModelDropdownToggle}
+          onKeyDown={handleModelTriggerKeyDown}
         />
 
         {/* Model Dropdown */}
         {showModelDropdown && (
           <ModelDropdown
+            activeIndex={effectiveActiveModelIndex}
+            anchorRef={dropdownTriggerRef}
+            triggerId={triggerId}
+            listboxId={listboxId}
+            popoverRef={dropdownMenuRef}
             models={models}
             currentModelId={displayModelId}
+            onActiveIndexChange={setActiveModelIndex}
             onModelSelect={handleModelSelect}
           />
         )}

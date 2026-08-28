@@ -185,21 +185,12 @@ pub fn send_paste_ctrl_v(enigo: &mut Enigo, hold_ms: u64) -> Result<(), String> 
     #[cfg(target_os = "linux")]
     let (modifier_key, v_key_code) = (Key::Control, Key::Unicode('v'));
 
-    // Press modifier + V
-    enigo
-        .key(modifier_key, enigo::Direction::Press)
-        .map_err(|e| format!("Failed to press modifier key: {}", e))?;
-    enigo
-        .key(v_key_code, enigo::Direction::Click)
-        .map_err(|e| format!("Failed to click V key: {}", e))?;
-
-    std::thread::sleep(std::time::Duration::from_millis(hold_ms));
-
-    enigo
-        .key(modifier_key, enigo::Direction::Release)
-        .map_err(|e| format!("Failed to release modifier key: {}", e))?;
-
-    Ok(())
+    send_paste_chord(
+        enigo,
+        &[("modifier", modifier_key)],
+        ("V", v_key_code),
+        hold_ms,
+    )
 }
 
 /// Sends a Ctrl+Shift+V paste command.
@@ -214,27 +205,12 @@ pub fn send_paste_ctrl_shift_v(enigo: &mut Enigo, hold_ms: u64) -> Result<(), St
     #[cfg(target_os = "linux")]
     let (modifier_key, v_key_code) = (Key::Control, Key::Unicode('v'));
 
-    // Press Ctrl/Cmd + Shift + V
-    enigo
-        .key(modifier_key, enigo::Direction::Press)
-        .map_err(|e| format!("Failed to press modifier key: {}", e))?;
-    enigo
-        .key(Key::Shift, enigo::Direction::Press)
-        .map_err(|e| format!("Failed to press Shift key: {}", e))?;
-    enigo
-        .key(v_key_code, enigo::Direction::Click)
-        .map_err(|e| format!("Failed to click V key: {}", e))?;
-
-    std::thread::sleep(std::time::Duration::from_millis(hold_ms));
-
-    enigo
-        .key(Key::Shift, enigo::Direction::Release)
-        .map_err(|e| format!("Failed to release Shift key: {}", e))?;
-    enigo
-        .key(modifier_key, enigo::Direction::Release)
-        .map_err(|e| format!("Failed to release modifier key: {}", e))?;
-
-    Ok(())
+    send_paste_chord(
+        enigo,
+        &[("modifier", modifier_key), ("Shift", Key::Shift)],
+        ("V", v_key_code),
+        hold_ms,
+    )
 }
 
 /// Sends a Shift+Insert paste command (Windows and Linux only).
@@ -246,21 +222,83 @@ pub fn send_paste_shift_insert(enigo: &mut Enigo, hold_ms: u64) -> Result<(), St
     #[cfg(not(target_os = "windows"))]
     let insert_key_code = Key::Other(0x76); // XK_Insert (keycode 118 / 0x76, also used as fallback)
 
-    // Press Shift + Insert
-    enigo
-        .key(Key::Shift, enigo::Direction::Press)
-        .map_err(|e| format!("Failed to press Shift key: {}", e))?;
-    enigo
-        .key(insert_key_code, enigo::Direction::Click)
-        .map_err(|e| format!("Failed to click Insert key: {}", e))?;
+    send_paste_chord(
+        enigo,
+        &[("Shift", Key::Shift)],
+        ("Insert", insert_key_code),
+        hold_ms,
+    )
+}
 
-    std::thread::sleep(std::time::Duration::from_millis(hold_ms));
+/// Sends one paste chord while making modifier cleanup unconditional.
+///
+/// Enigo errors do not prove that an input event was ignored by the OS. A
+/// failed press may therefore still have changed keyboard state, and a failed
+/// click/release may happen after the target has already observed part of the
+/// chord. Track every attempted modifier press and best-effort release all of
+/// them in reverse order on every exit path. Release errors are collected so
+/// one stuck modifier never prevents the remaining modifiers from being freed.
+fn send_paste_chord(
+    enigo: &mut Enigo,
+    modifiers: &[(&str, Key)],
+    trigger: (&str, Key),
+    hold_ms: u64,
+) -> Result<(), String> {
+    send_paste_chord_with(modifiers, &trigger, hold_ms, |key, direction| {
+        enigo.key(key.clone(), direction).map_err(|e| e.to_string())
+    })
+}
 
-    enigo
-        .key(Key::Shift, enigo::Direction::Release)
-        .map_err(|e| format!("Failed to release Shift key: {}", e))?;
+fn send_paste_chord_with<K: Clone>(
+    modifiers: &[(&str, K)],
+    trigger: &(&str, K),
+    hold_ms: u64,
+    mut send: impl FnMut(&K, enigo::Direction) -> Result<(), String>,
+) -> Result<(), String> {
+    let mut attempted_modifiers = 0;
+    let mut attempted_trigger = false;
+    let mut primary_error = None;
 
-    Ok(())
+    for (name, key) in modifiers {
+        // Include this key in cleanup even when Press returns an error: the OS
+        // may have accepted the event before the backend noticed a failure.
+        attempted_modifiers += 1;
+        if let Err(error) = send(key, enigo::Direction::Press) {
+            primary_error = Some(format!("Failed to press {name} key: {error}"));
+            break;
+        }
+    }
+
+    if primary_error.is_none() {
+        // A Click can be only partially accepted by SendInput (key-down
+        // succeeds, key-up fails). Use explicit events and always attempt the
+        // release so the trigger itself cannot remain logically pressed.
+        attempted_trigger = true;
+        if let Err(error) = send(&trigger.1, enigo::Direction::Press) {
+            primary_error = Some(format!("Failed to press {} key: {error}", trigger.0));
+        } else {
+            std::thread::sleep(std::time::Duration::from_millis(hold_ms));
+        }
+    }
+
+    let mut release_errors = Vec::new();
+    if attempted_trigger {
+        if let Err(error) = send(&trigger.1, enigo::Direction::Release) {
+            release_errors.push(format!("Failed to release {} key: {error}", trigger.0));
+        }
+    }
+    for (name, key) in modifiers[..attempted_modifiers].iter().rev() {
+        if let Err(error) = send(key, enigo::Direction::Release) {
+            release_errors.push(format!("Failed to release {name} key: {error}"));
+        }
+    }
+
+    match (primary_error, release_errors.is_empty()) {
+        (None, true) => Ok(()),
+        (Some(primary), true) => Err(primary),
+        (None, false) => Err(release_errors.join("; ")),
+        (Some(primary), false) => Err(format!("{primary}; {}", release_errors.join("; "))),
+    }
 }
 
 /// Pastes text directly using the enigo text method.
@@ -271,4 +309,122 @@ pub fn paste_text_direct(enigo: &mut Enigo, text: &str) -> Result<(), String> {
         .map_err(|e| format!("Failed to send text directly: {}", e))?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::send_paste_chord_with;
+    use enigo::Direction;
+
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    enum TestKey {
+        Control,
+        Shift,
+        V,
+    }
+
+    #[test]
+    fn releases_all_attempted_modifiers_after_trigger_failure() {
+        let modifiers = [("Control", TestKey::Control), ("Shift", TestKey::Shift)];
+        let trigger = ("V", TestKey::V);
+        let mut events = Vec::new();
+
+        let result = send_paste_chord_with(&modifiers, &trigger, 0, |key, direction| {
+            events.push((key.clone(), direction));
+            if key == &TestKey::V && direction == Direction::Press {
+                Err("injected test failure".into())
+            } else {
+                Ok(())
+            }
+        });
+
+        assert!(result.is_err());
+        assert_eq!(
+            events,
+            vec![
+                (TestKey::Control, Direction::Press),
+                (TestKey::Shift, Direction::Press),
+                (TestKey::V, Direction::Press),
+                (TestKey::V, Direction::Release),
+                (TestKey::Shift, Direction::Release),
+                (TestKey::Control, Direction::Release),
+            ]
+        );
+    }
+
+    #[test]
+    fn trigger_release_failure_still_releases_all_modifiers() {
+        let modifiers = [("Control", TestKey::Control), ("Shift", TestKey::Shift)];
+        let trigger = ("V", TestKey::V);
+        let mut events = Vec::new();
+
+        let result = send_paste_chord_with(&modifiers, &trigger, 0, |key, direction| {
+            events.push((key.clone(), direction));
+            if key == &TestKey::V && direction == Direction::Release {
+                Err("partial SendInput".into())
+            } else {
+                Ok(())
+            }
+        });
+
+        assert!(result.is_err_and(|error| error.contains("Failed to release V key")));
+        assert_eq!(
+            events,
+            vec![
+                (TestKey::Control, Direction::Press),
+                (TestKey::Shift, Direction::Press),
+                (TestKey::V, Direction::Press),
+                (TestKey::V, Direction::Release),
+                (TestKey::Shift, Direction::Release),
+                (TestKey::Control, Direction::Release),
+            ]
+        );
+    }
+
+    #[test]
+    fn release_failure_does_not_skip_remaining_modifiers() {
+        let modifiers = [("Control", TestKey::Control), ("Shift", TestKey::Shift)];
+        let trigger = ("V", TestKey::V);
+        let mut released = Vec::new();
+
+        let result = send_paste_chord_with(&modifiers, &trigger, 0, |key, direction| {
+            if direction == Direction::Release {
+                released.push(key.clone());
+                if key == &TestKey::Shift {
+                    return Err("Shift release failed".into());
+                }
+            }
+            Ok(())
+        });
+
+        assert!(result.is_err_and(|error| error.contains("Failed to release Shift key")));
+        assert_eq!(released, vec![TestKey::V, TestKey::Shift, TestKey::Control]);
+    }
+
+    #[test]
+    fn failed_modifier_press_is_still_released() {
+        let modifiers = [("Control", TestKey::Control), ("Shift", TestKey::Shift)];
+        let trigger = ("V", TestKey::V);
+        let mut events = Vec::new();
+
+        let result = send_paste_chord_with(&modifiers, &trigger, 0, |key, direction| {
+            events.push((key.clone(), direction));
+            if key == &TestKey::Shift && direction == Direction::Press {
+                Err("Shift press uncertain".into())
+            } else {
+                Ok(())
+            }
+        });
+
+        assert!(result.is_err());
+        assert_eq!(
+            events,
+            vec![
+                (TestKey::Control, Direction::Press),
+                (TestKey::Shift, Direction::Press),
+                (TestKey::Shift, Direction::Release),
+                (TestKey::Control, Direction::Release),
+            ]
+        );
+    }
 }

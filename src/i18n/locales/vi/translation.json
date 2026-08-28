@@ -256,6 +256,13 @@
         "history": "Lịch sử",
         "experimental": "Thử nghiệm"
       },
+      "elevatedInput": {
+        "title": "Nhập liệu vào ứng dụng quản trị viên",
+        "description": "Windows ngăn các ứng dụng thông thường nhập văn bản vào cửa sổ đang chạy với quyền quản trị viên. Hãy khởi động lại UXO với quyền quản trị viên trong phiên này để đọc chính tả vào các cửa sổ đó.",
+        "restart": "Khởi động lại với quyền quản trị viên",
+        "active": "Chế độ quản trị viên đang hoạt động",
+        "restarting": "Đang yêu cầu quyền…"
+      },
       "experimentalToggle": {
         "label": "Tính năng thử nghiệm",
         "description": "Bật các tính năng thử nghiệm đang trong quá trình phát triển."
@@ -652,6 +659,10 @@
     "modelLoadFailedUnknown": "mô hình không xác định",
     "pasteFailedTitle": "Không thể dán văn bản",
     "pasteFailed": "Không thể dán văn bản vào ứng dụng đang hoạt động.",
+    "elevatedPasteTitle": "Cần quyền quản trị viên",
+    "elevatedPaste": "Ứng dụng đích đang chạy với quyền quản trị viên. Bản chép lời của bạn đã được sao chép vào bảng nhớ tạm.",
+    "elevatedPasteAction": "Khởi động lại UXO",
+    "elevatedRestartFailed": "Không thể khởi động lại UXO với quyền quản trị viên.",
     "transcriptionFailedTitle": "Phiên âm thất bại"
   },
   "appLanguage": {

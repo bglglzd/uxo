@@ -256,6 +256,13 @@
         "history": "Histórico",
         "experimental": "Experimental"
       },
+      "elevatedInput": {
+        "title": "Entrada em aplicativos com privilégios de administrador",
+        "description": "O Windows impede que aplicativos comuns digitem em janelas executadas como administrador. Reinicie o UXO como administrador nesta sessão para ditar nelas.",
+        "restart": "Reiniciar como administrador",
+        "active": "Modo de administrador ativo",
+        "restarting": "Solicitando permissão…"
+      },
       "experimentalToggle": {
         "label": "Recursos Experimentais",
         "description": "Ativar recursos experimentais que ainda estão em desenvolvimento."
@@ -652,6 +659,10 @@
     "modelLoadFailedUnknown": "modelo desconhecido",
     "pasteFailedTitle": "Falha ao colar o texto",
     "pasteFailed": "Não foi possível colar o texto no aplicativo ativo.",
+    "elevatedPasteTitle": "É necessário acesso de administrador",
+    "elevatedPaste": "O aplicativo de destino está sendo executado como administrador. Sua transcrição foi copiada para a área de transferência.",
+    "elevatedPasteAction": "Reiniciar o UXO",
+    "elevatedRestartFailed": "Não foi possível reiniciar o UXO como administrador.",
     "transcriptionFailedTitle": "Falha na transcrição"
   },
   "appLanguage": {

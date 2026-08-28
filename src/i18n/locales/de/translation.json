@@ -256,6 +256,13 @@
         "history": "Verlauf",
         "experimental": "Experimentell"
       },
+      "elevatedInput": {
+        "title": "Eingabe in Administrator-Apps",
+        "description": "Windows verhindert, dass Standard-Apps Text in Fenster mit Administratorrechten eingeben. Starten Sie UXO für diese Sitzung als Administrator neu, um dort zu diktieren.",
+        "restart": "Als Administrator neu starten",
+        "active": "Administratormodus aktiv",
+        "restarting": "Berechtigung wird angefordert…"
+      },
       "experimentalToggle": {
         "label": "Experimentelle Funktionen",
         "description": "Experimentelle Funktionen aktivieren, die sich noch in Entwicklung befinden."
@@ -652,6 +659,10 @@
     "modelLoadFailedUnknown": "unbekanntes Modell",
     "pasteFailedTitle": "Text konnte nicht eingefügt werden",
     "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden.",
+    "elevatedPasteTitle": "Administratorzugriff erforderlich",
+    "elevatedPaste": "Die Ziel-App wird als Administrator ausgeführt. Ihre Transkription wurde in die Zwischenablage kopiert.",
+    "elevatedPasteAction": "UXO neu starten",
+    "elevatedRestartFailed": "UXO konnte nicht als Administrator neu gestartet werden.",
     "transcriptionFailedTitle": "Transkription fehlgeschlagen"
   },
   "appLanguage": {

@@ -256,6 +256,13 @@
         "history": "היסטוריה",
         "experimental": "ניסיוני"
       },
+      "elevatedInput": {
+        "title": "הקלדה באפליקציות מנהל",
+        "description": "Windows מונע מאפליקציות רגילות להקליד בחלונות שפועלים כמנהל מערכת. כדי להכתיב בהם, יש להפעיל מחדש את UXO כמנהל מערכת עבור הפעלה זו.",
+        "restart": "הפעלה מחדש כמנהל מערכת",
+        "active": "מצב מנהל מערכת פעיל",
+        "restarting": "מתבצעת בקשת הרשאה…"
+      },
       "experimentalToggle": {
         "label": "תכונות ניסיוניות",
         "description": "הפעל תכונות ניסיוניות שעדיין נמצאות בפיתוח."
@@ -652,6 +659,10 @@
     "modelLoadFailedUnknown": "מודל לא ידוע",
     "pasteFailedTitle": "ההדבקה נכשלה",
     "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל.",
+    "elevatedPasteTitle": "נדרשת גישת מנהל מערכת",
+    "elevatedPaste": "אפליקציית היעד פועלת כמנהל מערכת. התמלול שלך הועתק ללוח.",
+    "elevatedPasteAction": "הפעלה מחדש של UXO",
+    "elevatedRestartFailed": "לא ניתן היה להפעיל מחדש את UXO כמנהל מערכת.",
     "transcriptionFailedTitle": "התמלול נכשל"
   },
   "appLanguage": {

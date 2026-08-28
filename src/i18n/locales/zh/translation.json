@@ -256,6 +256,13 @@
         "history": "历史",
         "experimental": "实验性"
       },
+      "elevatedInput": {
+        "title": "向管理员应用输入",
+        "description": "Windows 会阻止普通应用向以管理员身份运行的窗口输入文字。要在这些窗口中进行语音输入，请在本次会话中以管理员身份重新启动 UXO。",
+        "restart": "以管理员身份重新启动",
+        "active": "管理员模式已启用",
+        "restarting": "正在请求权限…"
+      },
       "experimentalToggle": {
         "label": "实验性功能",
         "description": "启用仍在开发中的实验性功能。"
@@ -652,6 +659,10 @@
     "modelLoadFailedUnknown": "未知模型",
     "pasteFailedTitle": "粘贴文本失败",
     "pasteFailed": "无法将文本粘贴到当前活动的应用程序中。",
+    "elevatedPasteTitle": "需要管理员权限",
+    "elevatedPaste": "目标应用正以管理员身份运行。转写内容已复制到剪贴板。",
+    "elevatedPasteAction": "重新启动 UXO",
+    "elevatedRestartFailed": "无法以管理员身份重新启动 UXO。",
     "transcriptionFailedTitle": "转录失败"
   },
   "appLanguage": {

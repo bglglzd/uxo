@@ -32,6 +32,12 @@ struct RecordingErrorEvent {
     detail: Option<String>,
 }
 
+#[derive(Clone, serde::Serialize)]
+struct PasteErrorEvent {
+    code: String,
+    message: String,
+}
+
 /// Drop guard that notifies the [`TranscriptionCoordinator`] when the
 /// transcription pipeline finishes — whether it completes normally or panics.
 struct FinishGuard(AppHandle);
@@ -829,7 +835,15 @@ impl ShortcutAction for TranscribeAction {
                                         ),
                                         Err(e) => {
                                             error!("Failed to paste transcription: {}", e);
-                                            let _ = ah_clone.emit("paste-error", ());
+                                            let payload = PasteErrorEvent {
+                                                code: e.code().to_string(),
+                                                message: e.message().to_string(),
+                                            };
+                                            let _ = ah_clone.emit("paste-error", payload);
+                                            // Paste errors used to be visible only as a toast
+                                            // inside an often-hidden tray window. Bring settings
+                                            // forward so the recovery action is discoverable.
+                                            crate::show_main_window(&ah_clone);
                                         }
                                     }
                                     utils::hide_recording_overlay(&ah_clone);

@@ -256,6 +256,13 @@
         "history": "Historik",
         "experimental": "Experimentellt"
       },
+      "elevatedInput": {
+        "title": "Inmatning i appar med administratörsbehörighet",
+        "description": "Windows hindrar vanliga appar från att skriva i fönster som körs som administratör. Starta om UXO som administratör för den här sessionen för att diktera i dem.",
+        "restart": "Starta om som administratör",
+        "active": "Administratörsläge aktivt",
+        "restarting": "Begär behörighet…"
+      },
       "experimentalToggle": {
         "label": "Experimentella funktioner",
         "description": "Aktivera experimentella funktioner som fortfarande är under utveckling."
@@ -652,6 +659,10 @@
     "noInputDevice": "Ingen ljudenhet hittades. Anslut en mikrofon eller ett headset och försök igen.",
     "pasteFailedTitle": "Det gick inte att klistra in texten",
     "pasteFailed": "Texten kunde inte klistras in i det aktiva programmet.",
+    "elevatedPasteTitle": "Administratörsbehörighet krävs",
+    "elevatedPaste": "Målappen körs som administratör. Din transkription har kopierats till urklipp.",
+    "elevatedPasteAction": "Starta om UXO",
+    "elevatedRestartFailed": "UXO kunde inte startas om som administratör.",
     "transcriptionFailedTitle": "Transkriptionen misslyckades"
   },
   "appLanguage": {

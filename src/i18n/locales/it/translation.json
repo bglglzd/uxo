@@ -256,6 +256,13 @@
         "history": "Cronologia",
         "experimental": "Sperimentale"
       },
+      "elevatedInput": {
+        "title": "Immissione nelle app con privilegi di amministratore",
+        "description": "Windows impedisce alle app standard di digitare nelle finestre eseguite come amministratore. Riavvia UXO come amministratore per questa sessione per poter dettare in tali finestre.",
+        "restart": "Riavvia come amministratore",
+        "active": "Modalità amministratore attiva",
+        "restarting": "Richiesta dell’autorizzazione…"
+      },
       "experimentalToggle": {
         "label": "Funzionalità Sperimentali",
         "description": "Abilita le funzionalità sperimentali ancora in fase di sviluppo."
@@ -652,6 +659,10 @@
     "modelLoadFailedUnknown": "modello sconosciuto",
     "pasteFailedTitle": "Impossibile incollare il testo",
     "pasteFailed": "Non è stato possibile incollare il testo nell'applicazione attiva.",
+    "elevatedPasteTitle": "È necessario l’accesso come amministratore",
+    "elevatedPaste": "L’app di destinazione è in esecuzione come amministratore. La trascrizione è stata copiata negli appunti.",
+    "elevatedPasteAction": "Riavvia UXO",
+    "elevatedRestartFailed": "Non è stato possibile riavviare UXO come amministratore.",
     "transcriptionFailedTitle": "Trascrizione non riuscita"
   },
   "appLanguage": {

@@ -256,6 +256,13 @@
         "history": "Historique",
         "experimental": "Expérimental"
       },
+      "elevatedInput": {
+        "title": "Saisie dans les applications administrateur",
+        "description": "Windows empêche les applications standard de saisir du texte dans les fenêtres exécutées en tant qu’administrateur. Redémarrez UXO en tant qu’administrateur pour cette session afin d’y dicter du texte.",
+        "restart": "Redémarrer en tant qu’administrateur",
+        "active": "Mode administrateur actif",
+        "restarting": "Demande d’autorisation…"
+      },
       "experimentalToggle": {
         "label": "Fonctionnalités Expérimentales",
         "description": "Activer les fonctionnalités expérimentales encore en développement."
@@ -652,6 +659,10 @@
     "modelLoadFailedUnknown": "modèle inconnu",
     "pasteFailedTitle": "Échec du collage du texte",
     "pasteFailed": "Le texte n'a pas pu être collé dans l'application active.",
+    "elevatedPasteTitle": "Accès administrateur requis",
+    "elevatedPaste": "L’application cible est exécutée en tant qu’administrateur. Votre transcription a été copiée dans le presse-papiers.",
+    "elevatedPasteAction": "Redémarrer UXO",
+    "elevatedRestartFailed": "UXO n’a pas pu redémarrer en tant qu’administrateur.",
     "transcriptionFailedTitle": "Échec de la transcription"
   },
   "appLanguage": {

@@ -36,6 +36,7 @@
 #![cfg_attr(not(any(target_os = "macos", target_os = "windows")), allow(dead_code))]
 
 use std::time::{Duration, Instant};
+use std::{error::Error, fmt};
 
 #[cfg(target_os = "macos")]
 mod macos;
@@ -134,6 +135,45 @@ pub(crate) enum WaitDecision {
     Finish,
 }
 
+/// Failure boundary for the reliable-paste transaction.
+///
+/// Before the chord is attempted, falling back to the legacy transaction is
+/// safe. Once chord injection starts, an Enigo error is ambiguous: the target
+/// may already have observed some or all of the key events. Retrying would risk
+/// duplicate text, so callers must only keep the transcript on the clipboard
+/// and surface recovery to the user.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum ReliablePasteError {
+    Unavailable(String),
+    ChordMayHaveExecuted(String),
+}
+
+impl ReliablePasteError {
+    pub(crate) fn legacy_retry_is_safe(&self) -> bool {
+        matches!(self, Self::Unavailable(_))
+    }
+
+    pub(crate) fn message(&self) -> &str {
+        match self {
+            Self::Unavailable(message) | Self::ChordMayHaveExecuted(message) => message,
+        }
+    }
+}
+
+impl fmt::Display for ReliablePasteError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(self.message())
+    }
+}
+
+impl Error for ReliablePasteError {}
+
+impl From<String> for ReliablePasteError {
+    fn from(message: String) -> Self {
+        Self::Unavailable(message)
+    }
+}
+
 /// Pure decision: given the current transaction state, keep waiting for the
 /// target to read, or finish now. Both platform event loops call this.
 pub(crate) fn evaluate(state: &TxState, now: Instant) -> WaitDecision {
@@ -185,11 +225,12 @@ pub(crate) fn send_chord(
     }
 }
 
-/// Attempts the receipt-sequenced paste. Returns `Err` before anything has
-/// been published when the platform transaction cannot start, in which case
-/// the caller should fall back to the legacy paste path. On `Ok`, publishing
-/// and chord injection have completed and the guarded restore (plus
-/// auto-submit) finishes asynchronously.
+/// Attempts the receipt-sequenced paste. An [`ReliablePasteError::Unavailable`]
+/// occurs before chord injection and permits a legacy fallback. A
+/// [`ReliablePasteError::ChordMayHaveExecuted`] occurs after injection begins;
+/// callers must not retry because the target may already have received part of
+/// the chord. On `Ok`, publishing and chord injection have completed and the
+/// guarded restore (plus auto-submit) finishes asynchronously.
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 pub(crate) fn try_reliable_paste(
     text: &str,
@@ -199,7 +240,7 @@ pub(crate) fn try_reliable_paste(
     auto_submit: bool,
     auto_submit_key: crate::settings::AutoSubmitKey,
     clipboard_handling: crate::settings::ClipboardHandling,
-) -> Result<(), String> {
+) -> Result<(), ReliablePasteError> {
     platform::run(
         text,
         app_handle,
@@ -279,5 +320,14 @@ mod tests {
         let mut s = state_after_publish(Duration::from_millis(10));
         s.ownership_lost = true;
         assert!(matches!(evaluate(&s, Instant::now()), WaitDecision::Finish));
+    }
+
+    #[test]
+    fn reliable_error_distinguishes_safe_retry_from_uncertain_chord() {
+        let unavailable = ReliablePasteError::Unavailable("not published".into());
+        let uncertain = ReliablePasteError::ChordMayHaveExecuted("release failed".into());
+
+        assert!(unavailable.legacy_retry_is_safe());
+        assert!(!uncertain.legacy_retry_is_safe());
     }
 }

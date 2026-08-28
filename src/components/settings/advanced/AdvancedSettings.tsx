@@ -22,6 +22,7 @@ import { VoiceActivityDetection } from "../VoiceActivityDetection";
 import { AccelerationSelector } from "../AccelerationSelector";
 import { LazyStreamClose } from "../LazyStreamClose";
 import { FillerWordRemoval } from "../FillerWordRemoval";
+import { WindowsElevatedInput } from "../WindowsElevatedInput";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -40,6 +41,7 @@ export const AdvancedSettings: React.FC = () => {
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.advanced.groups.output")}>
+        <WindowsElevatedInput descriptionMode="inline" grouped={true} />
         <PasteMethodSetting descriptionMode="tooltip" grouped={true} />
         <TypingToolSetting descriptionMode="tooltip" grouped={true} />
         <ClipboardHandlingSetting descriptionMode="tooltip" grouped={true} />

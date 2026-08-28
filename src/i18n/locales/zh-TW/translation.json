@@ -256,6 +256,13 @@
         "history": "歷史",
         "experimental": "實驗性"
       },
+      "elevatedInput": {
+        "title": "在系統管理員應用程式中輸入",
+        "description": "Windows 會阻止一般應用程式在以系統管理員身分執行的視窗中輸入文字。若要在這些視窗中進行語音輸入，請在本次工作階段中以系統管理員身分重新啟動 UXO。",
+        "restart": "以系統管理員身分重新啟動",
+        "active": "系統管理員模式已啟用",
+        "restarting": "正在要求權限…"
+      },
       "experimentalToggle": {
         "label": "實驗性功能",
         "description": "啟用仍在開發中的實驗性功能"
@@ -652,6 +659,10 @@
     "modelLoadFailedUnknown": "未知模型",
     "pasteFailedTitle": "貼上文字失敗",
     "pasteFailed": "無法將文字貼上至目前作用中的應用程式。",
+    "elevatedPasteTitle": "需要系統管理員權限",
+    "elevatedPaste": "目標應用程式正以系統管理員身分執行。轉錄內容已複製到剪貼簿。",
+    "elevatedPasteAction": "重新啟動 UXO",
+    "elevatedRestartFailed": "無法以系統管理員身分重新啟動 UXO。",
     "transcriptionFailedTitle": "轉錄失敗"
   },
   "appLanguage": {

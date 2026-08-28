@@ -22,6 +22,11 @@ import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
 type OnboardingStep = "accessibility" | "model" | "done";
 
+interface PasteErrorEvent {
+  code: string;
+  message: string;
+}
+
 const renderSettingsContent = (section: SidebarSection) => {
   const ActiveComponent =
     SECTIONS_CONFIG[section]?.component || SECTIONS_CONFIG.general.component;
@@ -129,7 +134,46 @@ function App() {
   // (see actions.rs `error!("Failed to paste transcription: ...")`),
   // so we show a localized, user-friendly message here instead of the raw error.
   useEffect(() => {
-    const unlisten = listen("paste-error", () => {
+    const restartAsAdministrator = async () => {
+      try {
+        const result = await commands.restartAsAdministrator();
+        if (result.status === "error") {
+          toast.error(t("errors.elevatedRestartFailed"));
+        }
+      } catch (error) {
+        console.warn("Failed to restart UXO as administrator:", error);
+        toast.error(t("errors.elevatedRestartFailed"));
+      }
+    };
+
+    const unlisten = listen<PasteErrorEvent>("paste-error", async (event) => {
+      if (event.payload.code === "elevated_target") {
+        setCurrentSection("advanced");
+        let canRestart = false;
+        try {
+          const compatibility =
+            await commands.getWindowsInputCompatibilityStatus();
+          canRestart =
+            compatibility.status === "ok" &&
+            compatibility.data.canRestartAsAdministrator;
+        } catch (error) {
+          console.warn(
+            "Failed to read Windows input compatibility status:",
+            error,
+          );
+        }
+        toast.error(t("errors.elevatedPasteTitle"), {
+          description: t("errors.elevatedPaste"),
+          action: canRestart
+            ? {
+                label: t("errors.elevatedPasteAction"),
+                onClick: restartAsAdministrator,
+              }
+            : undefined,
+        });
+        return;
+      }
+
       toast.error(t("errors.pasteFailedTitle"), {
         description: t("errors.pasteFailed"),
       });

@@ -96,7 +96,6 @@ const selectStyles: StylesConfig<SelectOption, false> = {
   }),
   menu: (provided) => ({
     ...provided,
-    zIndex: 30,
     backgroundColor: "var(--color-surface-glass)",
     color: "var(--color-text)",
     border: "1px solid var(--color-border)",
@@ -104,6 +103,10 @@ const selectStyles: StylesConfig<SelectOption, false> = {
     boxShadow: "0 18px 40px var(--color-shadow)",
     overflow: "hidden",
     backdropFilter: "blur(18px)",
+  }),
+  menuPortal: (base) => ({
+    ...base,
+    zIndex: 10_000,
   }),
   option: (base, state) => ({
     ...base,
@@ -163,6 +166,8 @@ export const Select: React.FC<SelectProps> = React.memo(
       onBlur,
       isClearable,
       styles: selectStyles,
+      menuPortalTarget: document.body,
+      menuPosition: "fixed",
     };
 
     if (isCreatable) {

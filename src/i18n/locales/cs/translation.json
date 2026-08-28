@@ -256,6 +256,13 @@
         "history": "Historie",
         "experimental": "Experimentální"
       },
+      "elevatedInput": {
+        "title": "Psaní do aplikací správce",
+        "description": "Systém Windows brání běžným aplikacím v psaní do oken spuštěných jako správce. Chcete-li do nich diktovat, restartujte UXO pro tuto relaci jako správce.",
+        "restart": "Restartovat jako správce",
+        "active": "Režim správce je aktivní",
+        "restarting": "Žádost o oprávnění…"
+      },
       "experimentalToggle": {
         "label": "Experimentální funkce",
         "description": "Povolit experimentální funkce, které jsou stále ve vývoji."
@@ -652,6 +659,10 @@
     "modelLoadFailedUnknown": "neznámý model",
     "pasteFailedTitle": "Vložení textu se nezdařilo",
     "pasteFailed": "Text nebylo možné vložit do aktivní aplikace.",
+    "elevatedPasteTitle": "Je vyžadován přístup správce",
+    "elevatedPaste": "Cílová aplikace je spuštěná jako správce. Váš přepis byl zkopírován do schránky.",
+    "elevatedPasteAction": "Restartovat UXO",
+    "elevatedRestartFailed": "UXO se nepodařilo restartovat jako správce.",
     "transcriptionFailedTitle": "Přepis selhal"
   },
   "appLanguage": {

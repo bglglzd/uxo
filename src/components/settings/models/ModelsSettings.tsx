@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
 import {
@@ -18,6 +18,10 @@ import {
   supportsLanguageCode,
 } from "@/lib/constants/languages.ts";
 import type { ModelInfo } from "@/bindings";
+import {
+  AnchoredPopover,
+  focusAdjacentControl,
+} from "@/components/ui/AnchoredPopover";
 
 // check if model supports a language based on its supported_languages list
 const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
@@ -39,8 +43,15 @@ export const ModelsSettings: React.FC = () => {
   const [languageFilter, setLanguageFilter] = useState("all");
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
   const [languageSearch, setLanguageSearch] = useState("");
+  const [activeLanguageIndex, setActiveLanguageIndex] = useState(0);
   const languageDropdownRef = useRef<HTMLDivElement>(null);
+  const languageDropdownTriggerRef = useRef<HTMLButtonElement>(null);
+  const languageDropdownMenuRef = useRef<HTMLDivElement>(null);
   const languageSearchInputRef = useRef<HTMLInputElement>(null);
+  const languageDropdownId = useId();
+  const languageTriggerId = `uxo-model-language-trigger-${languageDropdownId}`;
+  const languageDialogId = `uxo-model-language-dialog-${languageDropdownId}`;
+  const languageListboxId = `uxo-model-language-listbox-${languageDropdownId}`;
   const {
     models,
     currentModel,
@@ -63,7 +74,8 @@ export const ModelsSettings: React.FC = () => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         languageDropdownRef.current &&
-        !languageDropdownRef.current.contains(event.target as Node)
+        !languageDropdownRef.current.contains(event.target as Node) &&
+        !languageDropdownMenuRef.current?.contains(event.target as Node)
       ) {
         setLanguageDropdownOpen(false);
         setLanguageSearch("");
@@ -86,6 +98,29 @@ export const ModelsSettings: React.FC = () => {
       lang.label.toLowerCase().includes(languageSearch.toLowerCase()),
     );
   }, [languageSearch]);
+  const selectedLanguageIndex =
+    languageFilter === "all"
+      ? 0
+      : filteredLanguages.findIndex((lang) => lang.value === languageFilter) +
+        1;
+  const languageOptionCount = filteredLanguages.length + 1;
+  const effectiveActiveLanguageIndex =
+    activeLanguageIndex >= 0 && activeLanguageIndex < languageOptionCount
+      ? activeLanguageIndex
+      : selectedLanguageIndex >= 0
+        ? selectedLanguageIndex
+        : 0;
+
+  useEffect(() => {
+    if (!languageDropdownOpen) return;
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById(
+          `${languageListboxId}-option-${effectiveActiveLanguageIndex}`,
+        )
+        ?.scrollIntoView({ block: "nearest" });
+    });
+  }, [effectiveActiveLanguageIndex, languageDropdownOpen, languageListboxId]);
 
   // Get selected language label
   const selectedLanguageLabel = useMemo(() => {
@@ -94,6 +129,106 @@ export const ModelsSettings: React.FC = () => {
     }
     return getLanguageLabel(languageFilter) || "";
   }, [languageFilter, t]);
+
+  const closeLanguageDropdown = (restoreFocus = false) => {
+    setLanguageDropdownOpen(false);
+    setLanguageSearch("");
+    if (restoreFocus) languageDropdownTriggerRef.current?.focus();
+  };
+
+  const openLanguageDropdown = (preferLast = false) => {
+    setLanguageSearch("");
+    const selectedIndex =
+      languageFilter === "all"
+        ? 0
+        : MODEL_CAPABILITY_LANGUAGES.findIndex(
+            (lang) => lang.value === languageFilter,
+          ) + 1;
+    setActiveLanguageIndex(
+      selectedIndex >= 0
+        ? selectedIndex
+        : preferLast
+          ? MODEL_CAPABILITY_LANGUAGES.length
+          : 0,
+    );
+    setLanguageDropdownOpen(true);
+  };
+
+  const selectLanguageFilter = (value: string) => {
+    setLanguageFilter(value);
+    closeLanguageDropdown(true);
+  };
+
+  const moveActiveLanguage = (direction: 1 | -1) => {
+    setActiveLanguageIndex(
+      (effectiveActiveLanguageIndex + direction + languageOptionCount) %
+        languageOptionCount,
+    );
+  };
+
+  const selectActiveLanguage = () => {
+    if (effectiveActiveLanguageIndex === 0) {
+      selectLanguageFilter("all");
+      return;
+    }
+    const language = filteredLanguages[effectiveActiveLanguageIndex - 1];
+    if (language) selectLanguageFilter(language.value);
+  };
+
+  const handleLanguageSearchKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    switch (event.key) {
+      case "ArrowDown":
+      case "ArrowUp":
+        event.preventDefault();
+        moveActiveLanguage(event.key === "ArrowDown" ? 1 : -1);
+        break;
+      case "Home":
+      case "End":
+        event.preventDefault();
+        setActiveLanguageIndex(
+          event.key === "Home" ? 0 : languageOptionCount - 1,
+        );
+        break;
+      case "Enter":
+        event.preventDefault();
+        selectActiveLanguage();
+        break;
+      case "Escape":
+        event.preventDefault();
+        closeLanguageDropdown(true);
+        break;
+      case "Tab":
+        event.preventDefault();
+        closeLanguageDropdown();
+        focusAdjacentControl(
+          languageDropdownTriggerRef.current,
+          event.shiftKey,
+        );
+        break;
+    }
+  };
+
+  const handleLanguageTriggerKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+  ) => {
+    if (
+      ["ArrowDown", "ArrowUp", "Home", "End", "Enter", " "].includes(event.key)
+    ) {
+      event.preventDefault();
+      openLanguageDropdown(event.key === "ArrowUp" || event.key === "End");
+      if (event.key === "Home") setActiveLanguageIndex(0);
+      if (event.key === "End") {
+        setActiveLanguageIndex(MODEL_CAPABILITY_LANGUAGES.length);
+      }
+    } else if (event.key === "Escape" && languageDropdownOpen) {
+      event.preventDefault();
+      closeLanguageDropdown(true);
+    } else if (event.key === "Tab") {
+      closeLanguageDropdown();
+    }
+  };
 
   const getModelStatus = (modelId: string): ModelCardStatus => {
     if (modelId in extractingModels) {
@@ -313,8 +448,17 @@ export const ModelsSettings: React.FC = () => {
               {/* Language filter dropdown */}
               <div className="relative" ref={languageDropdownRef}>
                 <button
+                  ref={languageDropdownTriggerRef}
+                  id={languageTriggerId}
                   type="button"
-                  onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
+                  onClick={() => {
+                    if (languageDropdownOpen) closeLanguageDropdown();
+                    else openLanguageDropdown();
+                  }}
+                  onKeyDown={handleLanguageTriggerKeyDown}
+                  aria-expanded={languageDropdownOpen}
+                  aria-haspopup="dialog"
+                  aria-controls={languageDialogId}
                   className={`flex items-center gap-1.5 h-8 px-3 text-sm font-medium rounded-lg transition-colors ${
                     languageFilter !== "all"
                       ? "bg-logo-primary/20 text-logo-primary"
@@ -332,75 +476,95 @@ export const ModelsSettings: React.FC = () => {
                   />
                 </button>
 
-                {languageDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-1 w-56 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden">
-                    <div className="p-2 border-b border-mid-gray/40">
-                      <input
-                        ref={languageSearchInputRef}
-                        type="text"
-                        value={languageSearch}
-                        onChange={(e) => setLanguageSearch(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (
-                            e.key === "Enter" &&
-                            filteredLanguages.length > 0
-                          ) {
-                            setLanguageFilter(filteredLanguages[0].value);
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          } else if (e.key === "Escape") {
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          }
-                        }}
-                        placeholder={t(
-                          "settings.general.language.searchPlaceholder",
-                        )}
-                        className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-md focus:outline-none focus:ring-1 focus:ring-logo-primary"
-                      />
-                    </div>
-                    <div className="max-h-48 overflow-y-auto">
+                <AnchoredPopover
+                  anchorRef={languageDropdownTriggerRef}
+                  popoverRef={languageDropdownMenuRef}
+                  open={languageDropdownOpen}
+                  id={languageDialogId}
+                  align="end"
+                  width={224}
+                  role="dialog"
+                  ariaLabelledBy={languageTriggerId}
+                  className="flex flex-col overflow-hidden rounded-xl border border-border bg-surface-glass shadow-xl backdrop-blur-xl"
+                >
+                  <div className="p-2 border-b border-mid-gray/40">
+                    <input
+                      ref={languageSearchInputRef}
+                      type="text"
+                      role="combobox"
+                      value={languageSearch}
+                      onChange={(event) => {
+                        setLanguageSearch(event.target.value);
+                        setActiveLanguageIndex(0);
+                      }}
+                      onKeyDown={handleLanguageSearchKeyDown}
+                      placeholder={t(
+                        "settings.general.language.searchPlaceholder",
+                      )}
+                      aria-labelledby={languageTriggerId}
+                      aria-expanded={true}
+                      aria-autocomplete="list"
+                      aria-controls={languageListboxId}
+                      aria-activedescendant={`${languageListboxId}-option-${effectiveActiveLanguageIndex}`}
+                      className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-md focus:outline-none focus:ring-1 focus:ring-logo-primary"
+                    />
+                  </div>
+                  <div
+                    id={languageListboxId}
+                    role="listbox"
+                    aria-labelledby={languageTriggerId}
+                    className="min-h-0 flex-1 overflow-y-auto"
+                  >
+                    <button
+                      id={`${languageListboxId}-option-0`}
+                      type="button"
+                      role="option"
+                      aria-selected={languageFilter === "all"}
+                      tabIndex={-1}
+                      onMouseEnter={() => setActiveLanguageIndex(0)}
+                      onClick={() => selectLanguageFilter("all")}
+                      className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
+                        effectiveActiveLanguageIndex === 0
+                          ? "bg-logo-primary/10 ring-1 ring-inset ring-logo-primary/35"
+                          : ""
+                      } ${
+                        languageFilter === "all"
+                          ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                          : "hover:bg-mid-gray/10"
+                      }`}
+                    >
+                      {t("settings.models.filters.allLanguages")}
+                    </button>
+                    {filteredLanguages.map((lang, index) => (
                       <button
+                        key={lang.value}
+                        id={`${languageListboxId}-option-${index + 1}`}
                         type="button"
-                        onClick={() => {
-                          setLanguageFilter("all");
-                          setLanguageDropdownOpen(false);
-                          setLanguageSearch("");
-                        }}
+                        role="option"
+                        aria-selected={languageFilter === lang.value}
+                        tabIndex={-1}
+                        onMouseEnter={() => setActiveLanguageIndex(index + 1)}
+                        onClick={() => selectLanguageFilter(lang.value)}
                         className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
-                          languageFilter === "all"
+                          effectiveActiveLanguageIndex === index + 1
+                            ? "bg-logo-primary/10 ring-1 ring-inset ring-logo-primary/35"
+                            : ""
+                        } ${
+                          languageFilter === lang.value
                             ? "bg-logo-primary/20 text-logo-primary font-semibold"
                             : "hover:bg-mid-gray/10"
                         }`}
                       >
-                        {t("settings.models.filters.allLanguages")}
+                        {lang.label}
                       </button>
-                      {filteredLanguages.map((lang) => (
-                        <button
-                          key={lang.value}
-                          type="button"
-                          onClick={() => {
-                            setLanguageFilter(lang.value);
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          }}
-                          className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
-                            languageFilter === lang.value
-                              ? "bg-logo-primary/20 text-logo-primary font-semibold"
-                              : "hover:bg-mid-gray/10"
-                          }`}
-                        >
-                          {lang.label}
-                        </button>
-                      ))}
-                      {filteredLanguages.length === 0 && (
-                        <div className="px-3 py-2 text-sm text-text/50 text-center">
-                          {t("settings.general.language.noResults")}
-                        </div>
-                      )}
-                    </div>
+                    ))}
+                    {filteredLanguages.length === 0 && (
+                      <div className="px-3 py-2 text-sm text-text/50 text-center">
+                        {t("settings.general.language.noResults")}
+                      </div>
+                    )}
                   </div>
-                )}
+                </AnchoredPopover>
               </div>
             </div>
           </div>

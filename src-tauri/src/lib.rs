@@ -24,11 +24,13 @@ mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
 mod utils;
+mod windows_input;
 
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, collect_events, Builder};
+pub use windows_input::wait_for_previous_instance;
 
 use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
@@ -93,7 +95,7 @@ fn build_console_filter() -> env_filter::Filter {
     builder.build()
 }
 
-fn show_main_window(app: &AppHandle) {
+pub(crate) fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
         if let Err(e) = main_window.unminimize() {
             log::error!("Failed to unminimize webview window: {}", e);
@@ -696,6 +698,8 @@ pub fn run(cli_args: CliArgs) {
             commands::get_app_dir_path,
             commands::get_app_settings,
             commands::get_default_settings,
+            windows_input::get_windows_input_compatibility_status,
+            windows_input::restart_as_administrator,
             commands::get_log_dir_path,
             commands::set_log_level,
             commands::open_recordings_folder,

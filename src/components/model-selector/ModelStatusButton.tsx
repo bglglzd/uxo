@@ -11,20 +11,34 @@ type ModelStatus =
   | "none";
 
 interface ModelStatusButtonProps {
+  activeDescendant?: string;
   status: ModelStatus;
   displayText: string;
   isDropdownOpen: boolean;
+  listboxId: string;
   onClick: () => void;
+  onKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
+  triggerId: string;
   className?: string;
 }
 
-const ModelStatusButton: React.FC<ModelStatusButtonProps> = ({
-  status,
-  displayText,
-  isDropdownOpen,
-  onClick,
-  className = "",
-}) => {
+const ModelStatusButton = React.forwardRef<
+  HTMLButtonElement,
+  ModelStatusButtonProps
+>(function ModelStatusButton(
+  {
+    activeDescendant,
+    status,
+    displayText,
+    isDropdownOpen,
+    listboxId,
+    onClick,
+    onKeyDown,
+    triggerId,
+    className = "",
+  },
+  ref,
+) {
   const getStatusColor = (status: ModelStatus): string => {
     switch (status) {
       case "ready":
@@ -50,9 +64,19 @@ const ModelStatusButton: React.FC<ModelStatusButtonProps> = ({
 
   return (
     <button
+      ref={ref}
+      id={triggerId}
+      type="button"
+      role="combobox"
       onClick={onClick}
+      onKeyDown={onKeyDown}
       className={`flex items-center gap-2 hover:text-text/80 transition-colors ${className}`}
-      title={`Model status: ${displayText}`}
+      title={displayText}
+      aria-label={displayText}
+      aria-expanded={isDropdownOpen}
+      aria-haspopup="listbox"
+      aria-controls={listboxId}
+      aria-activedescendant={activeDescendant}
     >
       <div className={`w-2 h-2 rounded-full ${getStatusColor(status)}`} />
       <span className="max-w-28 truncate">{displayText}</span>
@@ -71,6 +95,8 @@ const ModelStatusButton: React.FC<ModelStatusButtonProps> = ({
       </svg>
     </button>
   );
-};
+});
+
+ModelStatusButton.displayName = "ModelStatusButton";
 
 export default ModelStatusButton;

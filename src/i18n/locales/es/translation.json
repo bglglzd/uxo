@@ -256,6 +256,13 @@
         "history": "Historial",
         "experimental": "Experimental"
       },
+      "elevatedInput": {
+        "title": "Entrada en aplicaciones con permisos de administrador",
+        "description": "Windows impide que las aplicaciones estándar escriban en ventanas con permisos de administrador. Reinicia UXO como administrador durante esta sesión para poder dictar en ellas.",
+        "restart": "Reiniciar como administrador",
+        "active": "Modo de administrador activo",
+        "restarting": "Solicitando permiso…"
+      },
       "experimentalToggle": {
         "label": "Funciones experimentales",
         "description": "Habilitar funciones experimentales que aún están en desarrollo."
@@ -652,6 +659,10 @@
     "modelLoadFailedUnknown": "modelo desconocido",
     "pasteFailedTitle": "Error al pegar el texto",
     "pasteFailed": "No se pudo pegar el texto en la aplicación activa.",
+    "elevatedPasteTitle": "Se necesita acceso de administrador",
+    "elevatedPaste": "La aplicación de destino se está ejecutando como administrador. Tu transcripción se ha copiado al portapapeles.",
+    "elevatedPasteAction": "Reiniciar UXO",
+    "elevatedRestartFailed": "UXO no pudo reiniciarse como administrador.",
     "transcriptionFailedTitle": "Error de transcripción"
   },
   "appLanguage": {

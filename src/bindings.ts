@@ -509,6 +509,22 @@ async getDefaultSettings() : Promise<Result<AppSettings, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async getWindowsInputCompatibilityStatus() : Promise<Result<WindowsInputCompatibilityStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_windows_input_compatibility_status") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async restartAsAdministrator() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("restart_as_administrator") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getLogDirPath() : Promise<Result<string, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_log_dir_path") };
@@ -1087,6 +1103,8 @@ export type StreamWorkKind = "transcribing" | "polishing"
 export type Theme = "system" | "light" | "dark"
 export type TranscribeAcceleratorSetting = "auto" | "cpu" | "gpu"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
+export type WindowsInputCompatibilityStatus = { supported: boolean; currentIntegrity: WindowsIntegrityLevel; foregroundIntegrity: WindowsIntegrityLevel | null; foregroundProcessId: number | null; foregroundRequiresElevation: boolean; runningAsAdministrator: boolean; canRestartAsAdministrator: boolean }
+export type WindowsIntegrityLevel = "unsupported" | "unknown" | "untrusted" | "low" | "medium" | "medium_plus" | "high" | "system" | "protected"
 export type WindowsMicrophonePermissionStatus = { supported: boolean; overall_access: PermissionAccess; device_access: PermissionAccess; app_access: PermissionAccess; desktop_app_access: PermissionAccess }
 
 /** tauri-specta globals **/

@@ -256,6 +256,13 @@
         "history": "Geschiedenis",
         "experimental": "Experimenteel"
       },
+      "elevatedInput": {
+        "title": "Invoer in apps met administratorrechten",
+        "description": "Windows voorkomt dat gewone apps tekst invoeren in vensters die als administrator worden uitgevoerd. Start UXO voor deze sessie opnieuw als administrator om daarin te dicteren.",
+        "restart": "Opnieuw starten als administrator",
+        "active": "Administratormodus actief",
+        "restarting": "Toestemming aanvragen…"
+      },
       "experimentalToggle": {
         "label": "Experimentele functies",
         "description": "Schakel experimentele functies in die nog in ontwikkeling zijn."
@@ -655,6 +662,10 @@
     "modelLoadFailedUnknown": "onbekend model",
     "pasteFailedTitle": "Tekst plakken mislukt",
     "pasteFailed": "Tekst kon niet worden geplakt in de actieve applicatie.",
+    "elevatedPasteTitle": "Administratorrechten vereist",
+    "elevatedPaste": "De doel-app wordt als administrator uitgevoerd. Je transcriptie is naar het klembord gekopieerd.",
+    "elevatedPasteAction": "UXO opnieuw starten",
+    "elevatedRestartFailed": "UXO kon niet als administrator opnieuw worden gestart.",
     "transcriptionFailedTitle": "Transcriptie mislukt"
   },
   "appLanguage": {

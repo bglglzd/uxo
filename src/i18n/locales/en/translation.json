@@ -256,6 +256,13 @@
         "history": "History",
         "experimental": "Experimental"
       },
+      "elevatedInput": {
+        "title": "Administrator app input",
+        "description": "Windows blocks standard apps from typing into administrator windows. Restart UXO as administrator for this session to dictate there.",
+        "restart": "Restart as administrator",
+        "active": "Administrator mode active",
+        "restarting": "Requesting permission…"
+      },
       "experimentalToggle": {
         "label": "Experimental Features",
         "description": "Enable experimental features that are still in development."
@@ -655,6 +662,10 @@
     "modelLoadFailedUnknown": "unknown model",
     "pasteFailedTitle": "Failed to Paste Text",
     "pasteFailed": "Text could not be pasted into the active application.",
+    "elevatedPasteTitle": "Administrator access needed",
+    "elevatedPaste": "The target app is running as administrator. Your transcription was copied to the clipboard.",
+    "elevatedPasteAction": "Restart UXO",
+    "elevatedRestartFailed": "UXO could not restart as administrator.",
     "transcriptionFailedTitle": "Transcription Failed"
   },
   "appLanguage": {

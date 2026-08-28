@@ -256,6 +256,13 @@
         "history": "Historik",
         "experimental": "Eksperimentel"
       },
+      "elevatedInput": {
+        "title": "Indtastning i administratorapps",
+        "description": "Windows forhindrer standardapps i at skrive i vinduer, der kører som administrator. Genstart UXO som administrator for denne session for at diktere i dem.",
+        "restart": "Genstart som administrator",
+        "active": "Administratortilstand er aktiv",
+        "restarting": "Anmoder om tilladelse…"
+      },
       "experimentalToggle": {
         "label": "Eksperimentelle funktioner",
         "description": "Aktivér eksperimentelle funktioner, der stadig er under udvikling."
@@ -655,6 +662,10 @@
     "modelLoadFailedUnknown": "ukendt model",
     "pasteFailedTitle": "Kunne ikke indsætte tekst",
     "pasteFailed": "Teksten kunne ikke indsættes i det aktive program.",
+    "elevatedPasteTitle": "Administratoradgang kræves",
+    "elevatedPaste": "Målappen kører som administrator. Din transskription blev kopieret til udklipsholderen.",
+    "elevatedPasteAction": "Genstart UXO",
+    "elevatedRestartFailed": "UXO kunne ikke genstartes som administrator.",
     "transcriptionFailedTitle": "Transskription mislykkedes"
   },
   "appLanguage": {

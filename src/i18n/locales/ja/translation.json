@@ -256,6 +256,13 @@
         "history": "履歴",
         "experimental": "実験的"
       },
+      "elevatedInput": {
+        "title": "管理者権限アプリへの入力",
+        "description": "Windows では、通常のアプリから管理者権限で実行中のウィンドウに文字を入力できません。そこで音声入力するには、このセッション中のみ UXO を管理者として再起動してください。",
+        "restart": "管理者として再起動",
+        "active": "管理者モードが有効です",
+        "restarting": "許可を求めています…"
+      },
       "experimentalToggle": {
         "label": "実験的な機能",
         "description": "まだ開発中の実験的な機能を有効にします。"
@@ -652,6 +659,10 @@
     "modelLoadFailedUnknown": "不明なモデル",
     "pasteFailedTitle": "テキストの貼り付けに失敗しました",
     "pasteFailed": "アクティブなアプリにテキストを貼り付けられませんでした。",
+    "elevatedPasteTitle": "管理者権限が必要です",
+    "elevatedPaste": "対象のアプリは管理者として実行されています。文字起こしはクリップボードにコピーされました。",
+    "elevatedPasteAction": "UXO を再起動",
+    "elevatedRestartFailed": "UXO を管理者として再起動できませんでした。",
     "transcriptionFailedTitle": "文字起こしに失敗しました"
   },
   "appLanguage": {

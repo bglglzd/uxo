@@ -1,21 +1,34 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import type { ModelInfo } from "@/bindings";
+import { AnchoredPopover } from "@/components/ui/AnchoredPopover";
 import {
   getTranslatedModelName,
   getTranslatedModelDescription,
 } from "../../lib/utils/modelTranslation";
 
 interface ModelDropdownProps {
+  activeIndex: number;
+  anchorRef: React.RefObject<HTMLElement>;
+  listboxId: string;
   models: ModelInfo[];
   currentModelId: string;
+  onActiveIndexChange: (index: number) => void;
   onModelSelect: (modelId: string) => void;
+  popoverRef: React.RefObject<HTMLDivElement>;
+  triggerId: string;
 }
 
 const ModelDropdown: React.FC<ModelDropdownProps> = ({
+  activeIndex,
+  anchorRef,
+  listboxId,
   models,
   currentModelId,
+  onActiveIndexChange,
   onModelSelect,
+  popoverRef,
+  triggerId,
 }) => {
   const { t } = useTranslation();
   const downloadedModels = models.filter((m) => m.is_downloaded);
@@ -25,22 +38,34 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
   };
 
   return (
-    <div className="absolute bottom-full start-0 mb-2 w-64 max-h-[60vh] overflow-y-auto bg-background border border-mid-gray/20 rounded-lg shadow-lg py-2 z-50">
+    <AnchoredPopover
+      anchorRef={anchorRef}
+      popoverRef={popoverRef}
+      open
+      id={listboxId}
+      preferredSide="top"
+      width={256}
+      maxHeight={Math.floor(window.innerHeight * 0.6)}
+      role="listbox"
+      ariaLabelledBy={triggerId}
+      className="overflow-y-auto rounded-xl border border-border bg-surface-glass py-2 shadow-xl backdrop-blur-xl"
+    >
       {downloadedModels.length > 0 ? (
         <div>
-          {downloadedModels.map((model) => (
+          {downloadedModels.map((model, index) => (
             <div
               key={model.id}
+              id={`${listboxId}-option-${index}`}
               onClick={() => handleModelClick(model.id)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleModelClick(model.id);
-                }
-              }}
-              tabIndex={0}
-              role="button"
+              onMouseEnter={() => onActiveIndexChange(index)}
+              tabIndex={-1}
+              role="option"
+              aria-selected={currentModelId === model.id}
               className={`w-full px-3 py-2 text-start hover:bg-mid-gray/10 transition-colors cursor-pointer focus:outline-none ${
+                activeIndex === index
+                  ? "bg-logo-primary/10 ring-1 ring-inset ring-logo-primary/35"
+                  : ""
+              } ${
                 currentModelId === model.id
                   ? "bg-logo-primary/10 text-logo-primary"
                   : ""
@@ -79,7 +104,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
           {t("modelSelector.noModelsAvailable")}
         </div>
       )}
-    </div>
+    </AnchoredPopover>
   );
 };
 
