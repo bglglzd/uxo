@@ -24,7 +24,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantClasses = {
     primary:
-      "bg-background-ui text-[var(--color-on-accent)] border-background-ui hover:brightness-110 hover:shadow-md",
+      "bg-background-ui text-on-accent border-background-ui hover:brightness-110 hover:shadow-md",
     "primary-soft":
       "text-logo-primary bg-logo-primary/10 border-logo-primary/15 hover:bg-logo-primary/20 hover:border-logo-primary/30",
     secondary:
@@ -33,7 +33,7 @@ export const Button: React.FC<ButtonProps> = ({
     // status token so they remain distinct from the brand accent.
     warning:
       "text-text bg-surface-raised/75 border-border hover:bg-warning/10 hover:border-warning/55",
-    danger: "text-white bg-error border-error hover:brightness-110",
+    danger: "text-on-accent bg-error border-error hover:brightness-110",
     "danger-ghost":
       "text-error border-transparent shadow-none hover:bg-error/10",
     ghost:

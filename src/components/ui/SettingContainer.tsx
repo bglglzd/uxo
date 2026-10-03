@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CircleHelp } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Tooltip } from "./Tooltip";
 
 interface SettingContainerProps {
@@ -23,6 +24,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
   disabled = false,
   tooltipPosition = "top",
 }) => {
+  const { t } = useTranslation();
   const [showTooltip, setShowTooltip] = useState(false);
   const tooltipRef = useRef<HTMLButtonElement>(null);
 
@@ -65,11 +67,12 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
             <button
               type="button"
               ref={tooltipRef}
-              className="relative flex h-5 w-5 items-center justify-center rounded-full text-mid-gray transition-colors hover:bg-logo-primary/10 hover:text-logo-primary"
+              className="relative flex h-6 w-6 items-center justify-center rounded-full text-mid-gray transition-colors hover:bg-logo-primary/10 hover:text-logo-primary"
               onMouseEnter={() => setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
               onClick={toggleTooltip}
-              aria-label="More information"
+              aria-label={t("common.moreInfo")}
+              aria-expanded={showTooltip}
             >
               <CircleHelp className="h-3.5 w-3.5" strokeWidth={1.8} />
               {showTooltip && (
@@ -123,11 +126,12 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
             <button
               type="button"
               ref={tooltipRef}
-              className="relative flex h-5 w-5 items-center justify-center rounded-full text-mid-gray transition-colors hover:bg-logo-primary/10 hover:text-logo-primary"
+              className="relative flex h-6 w-6 items-center justify-center rounded-full text-mid-gray transition-colors hover:bg-logo-primary/10 hover:text-logo-primary"
               onMouseEnter={() => setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
               onClick={toggleTooltip}
-              aria-label="More information"
+              aria-label={t("common.moreInfo")}
+              aria-expanded={showTooltip}
             >
               <CircleHelp className="h-3.5 w-3.5" strokeWidth={1.8} />
               {showTooltip && (

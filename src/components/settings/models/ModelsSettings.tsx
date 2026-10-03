@@ -373,9 +373,9 @@ export const ModelsSettings: React.FC = () => {
   return (
     <div className="max-w-3xl w-full mx-auto space-y-4">
       <div className="mb-4">
-        <h1 className="text-xl font-semibold mb-2">
+        <h2 className="text-xl font-semibold mb-2">
           {t("settings.models.title")}
-        </h1>
+        </h2>
         <p className="text-sm text-text/60">
           {t("settings.models.description")}
         </p>
@@ -383,13 +383,13 @@ export const ModelsSettings: React.FC = () => {
 
       {/* Search bar — filter the catalog by name or description */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text/40 pointer-events-none" />
+        <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text/40 pointer-events-none" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={t("settings.models.searchPlaceholder")}
-          className="w-full pl-9 pr-3 py-2 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-lg focus:outline-none focus:ring-1 focus:ring-logo-primary placeholder:text-text/40"
+          className="w-full ps-9 pe-3 py-2 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-lg focus:outline-none focus:ring-1 focus:ring-logo-primary placeholder:text-text/40"
         />
       </div>
 
@@ -523,7 +523,7 @@ export const ModelsSettings: React.FC = () => {
                       tabIndex={-1}
                       onMouseEnter={() => setActiveLanguageIndex(0)}
                       onClick={() => selectLanguageFilter("all")}
-                      className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
+                      className={`w-full px-3 py-1.5 text-sm text-start transition-colors ${
                         effectiveActiveLanguageIndex === 0
                           ? "bg-logo-primary/10 ring-1 ring-inset ring-logo-primary/35"
                           : ""
@@ -545,7 +545,7 @@ export const ModelsSettings: React.FC = () => {
                         tabIndex={-1}
                         onMouseEnter={() => setActiveLanguageIndex(index + 1)}
                         onClick={() => selectLanguageFilter(lang.value)}
-                        className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
+                        className={`w-full px-3 py-1.5 text-sm text-start transition-colors ${
                           effectiveActiveLanguageIndex === index + 1
                             ? "bg-logo-primary/10 ring-1 ring-inset ring-logo-primary/35"
                             : ""

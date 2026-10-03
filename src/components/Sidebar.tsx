@@ -104,7 +104,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="uxo-sidebar-brand flex h-24 items-center justify-center">
         <UxoLogo width={116} className="text-text" />
       </div>
-      <nav className="uxo-sidebar-nav flex w-full flex-1 flex-col gap-1.5 border-t border-mid-gray/15 pt-4">
+      <nav
+        aria-label={t("sidebar.navigation")}
+        className="uxo-sidebar-nav flex w-full flex-1 flex-col gap-1.5 border-t border-mid-gray/15 pt-4"
+      >
         {availableSections.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;

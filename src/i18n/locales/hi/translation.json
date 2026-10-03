@@ -16,7 +16,8 @@
     "postProcessing": "पोस्ट प्रोसेस",
     "history": "इतिहास",
     "debug": "डिबग",
-    "about": "के बारे में"
+    "about": "के बारे में",
+    "navigation": "Settings navigation"
   },
   "onboarding": {
     "subtitle": "शुरू करने के लिए, एक ट्रांसक्रिप्शन मॉडल चुनें",
@@ -197,6 +198,11 @@
       "pushToTalk": {
         "label": "पुश टू टॉक",
         "description": "रिकॉर्ड करने के लिए दबाकर रखें, रोकने के लिए छोड़ दें"
+      },
+      "secondaryLanguage": {
+        "title": "Second language",
+        "description": "A language you often mix into your main one, such as English terms in Russian speech. Whisper models then keep those words in their own spelling instead of transliterating or translating them.",
+        "none": "None"
       }
     },
     "models": {
@@ -388,6 +394,18 @@
       "fillerWordRemoval": {
         "title": "फिलर शब्द हटाएं",
         "description": "ट्रांसक्रिप्शन से आम हिचकिचाहट वाले शब्द हटाता है। उन्हें बनाए रखने के लिए इसे बंद करें।"
+      },
+      "numbersAsDigits": {
+        "title": "Numbers as digits",
+        "description": "Write dates, years, phone numbers, prices and other quantities with digits when the context calls for it (\"25 March\", \"+7 916 123-45-67\"). Small standalone numbers stay as words. Russian and English."
+      },
+      "builtinDictionary": {
+        "title": "Brand and tech dictionary",
+        "description": "Fix the spelling of well-known brands and technical terms after transcription, including Russian transliterations (\"гитхаб\" → GitHub, \"чат джипити\" → ChatGPT). Works offline and adds no noticeable delay."
+      },
+      "runAsAdministrator": {
+        "title": "Always run as administrator",
+        "description": "Start UXO with administrator rights every time (Windows asks for confirmation), so dictation also works in terminals and shells running as administrator. Without it, Windows blocks input into those windows."
       }
     },
     "postProcessing": {
@@ -640,7 +658,15 @@
     "open": "खोलें",
     "copy": "कॉपी करें",
     "clear": "मिटाएं",
-    "noOptionsFound": "कोई विकल्प नहीं मिला"
+    "noOptionsFound": "कोई विकल्प नहीं मिला",
+    "reset": "Reset",
+    "moreInfo": "More information",
+    "copyToClipboard": "Copy to clipboard",
+    "notAvailable": "Not available",
+    "selectOption": "Select an option...",
+    "play": "Play",
+    "pause": "Pause",
+    "previewSound": "Preview sound theme (plays start then stop)"
   },
   "accessibility": {
     "permissionsDescription": "ट्रांसक्राइब किया गया टेक्स्ट टाइप करने के लिए, UXO को ऐक्सेसिबिलिटी अनुमतियों की ज़रूरत है.",
@@ -666,7 +692,8 @@
     "elevatedPaste": "लक्षित ऐप एडमिनिस्ट्रेटर के रूप में चल रहा है। आपका ट्रांसक्रिप्शन क्लिपबोर्ड पर कॉपी कर दिया गया है।",
     "elevatedPasteAction": "UXO को फिर से शुरू करें",
     "elevatedRestartFailed": "UXO को एडमिनिस्ट्रेटर के रूप में फिर से शुरू नहीं किया जा सका।",
-    "transcriptionFailedTitle": "ट्रांसक्रिप्शन नहीं हो सका"
+    "transcriptionFailedTitle": "ट्रांसक्रिप्शन नहीं हो सका",
+    "unknown": "Unknown error"
   },
   "appLanguage": {
     "title": "ऐप्लिकेशन की भाषा",
@@ -683,7 +710,8 @@
   },
   "overlay": {
     "transcribing": "ट्रांसक्राइब हो रहा है...",
-    "processing": "प्रोसेस हो रहा है..."
+    "processing": "प्रोसेस हो रहा है...",
+    "cancel": "Cancel"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} शायद 1 शॉर्टकट को ब्लॉक कर रहा है",
@@ -695,5 +723,40 @@
     "learnMore": "इसे कैसे ठीक करें",
     "recorderBlocked": "अभी शॉर्टकट रिकॉर्ड नहीं किए जा सकते — macOS Secure Input कुंजी इवेंट ब्लॉक कर रहा है. पहले Secure Input चेतावनी हल करें.",
     "dismiss": "खारिज करें"
+  },
+  "updates": {
+    "title": "Updates",
+    "description": "Check GitHub for a newer UXO. You can read what changed in every new version before downloading; the installer is verified with its SHA-256 checksum before it runs.",
+    "checkNow": "Check for updates",
+    "checking": "Checking…",
+    "upToDate": "You're up to date",
+    "checkFailed": "Could not check for updates: {{error}}",
+    "available": "Version {{version}} is available",
+    "whatsNew": "What's new",
+    "toast": "UXO {{version}} is available",
+    "pill": "Update {{version}}",
+    "readyPill": "Restart to update",
+    "dialogTitle": "UXO {{version}} is available",
+    "dialogDescription": "You have version {{current}}. Here is what changed since then.",
+    "openReleasePage": "Release page",
+    "download": "Download",
+    "downloadWithSize": "Download ({{size}})",
+    "downloading": "Downloading…",
+    "progress": "{{percent}}% · {{downloaded}} of {{total}}",
+    "verified": "The update is downloaded and its checksum verified. UXO will close, install the update and start again.",
+    "failed": "Update failed: {{error}}",
+    "installAndRestart": "Install and restart",
+    "installing": "Starting installer…",
+    "preview": "Preview",
+    "noNotes": "No release notes.",
+    "blocker": {
+      "portable": "This is a portable copy of UXO. Download the new version from the release page and replace this folder.",
+      "unsupported_platform": "Automatic installation is available on Windows. Download the new version from the release page.",
+      "missing_asset": "This release has no verified installer for your system. Download it from the release page."
+    },
+    "autoCheck": {
+      "title": "Check for updates automatically",
+      "description": "Look for new versions in the background a few times a day. Only the public GitHub release list is requested; nothing is downloaded or installed without your confirmation."
+    }
   }
 }

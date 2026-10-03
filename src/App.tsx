@@ -120,7 +120,9 @@ function App() {
         });
       } else {
         toast.error(
-          t("errors.recordingFailed", { error: detail ?? "Unknown error" }),
+          t("errors.recordingFailed", {
+            error: detail ?? t("errors.unknown"),
+          }),
         );
       }
     });
@@ -301,7 +303,7 @@ function App() {
   // unreachable) are silently swallowed and the wizard just appears to "blink".
   const toaster = (
     <Toaster
-      theme="system"
+      theme={settings?.theme ?? "system"}
       toastOptions={{
         unstyled: true,
         classNames: {

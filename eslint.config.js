@@ -20,17 +20,33 @@ export default [
       "i18next/no-literal-string": [
         "error",
         {
-          markupOnly: true, // Only check JSX content, not all strings
-          ignoreAttribute: [
-            "className",
-            "style",
-            "type",
-            "id",
-            "name",
-            "key",
-            "data-*",
-            "aria-*",
-          ], // Ignore common non-translatable attributes
+          // Check JSX text, string expressions inside JSX, and the
+          // user-facing attributes listed below. Other attributes
+          // (className, style, id, data-*, event handlers...) are skipped.
+          mode: "jsx-only",
+          "jsx-attributes": {
+            include: ["^(aria-label|title|placeholder|alt|label)$"],
+          },
+          // Defaults from eslint-plugin-i18next plus settings-store helpers
+          // that take setting keys, not user-facing text.
+          callees: {
+            exclude: [
+              "i18n(ext)?",
+              "t",
+              "require",
+              "addEventListener",
+              "removeEventListener",
+              "postMessage",
+              "getElementById",
+              "dispatch",
+              "commit",
+              "includes",
+              "indexOf",
+              "endsWith",
+              "startsWith",
+              "isUpdating",
+            ],
+          },
         },
       ],
     },

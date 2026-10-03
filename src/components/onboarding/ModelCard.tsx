@@ -112,7 +112,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
   );
 
   const baseClasses =
-    "flex flex-col rounded-2xl px-5 py-4 gap-2.5 text-left border bg-surface-glass shadow-sm backdrop-blur-md transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+    "flex flex-col rounded-2xl px-5 py-4 gap-2.5 text-start border bg-surface-glass shadow-sm backdrop-blur-md transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
 
   const getVariantClasses = () => {
     if (status === "active") {
@@ -148,7 +148,11 @@ const ModelCard: React.FC<ModelCardProps> = ({
     <div
       onClick={handleClick}
       onKeyDown={(e) => {
-        if (e.key === "Enter" && isClickable) handleClick();
+        if (e.target !== e.currentTarget) return;
+        if ((e.key === "Enter" || e.key === " ") && isClickable) {
+          e.preventDefault();
+          handleClick();
+        }
       }}
       role={isClickable ? "button" : undefined}
       tabIndex={isClickable ? 0 : undefined}
@@ -175,7 +179,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
             )}
             {status === "active" && (
               <Badge variant="primary">
-                <Check className="w-3 h-3 mr-1" />
+                <Check className="w-3 h-3 me-1" />
                 {t("modelSelector.active")}
               </Badge>
             )}
@@ -187,7 +191,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
             )}
             {status === "switching" && (
               <Badge variant="secondary">
-                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                <Loader2 className="w-3 h-3 me-1 animate-spin" />
                 {t("modelSelector.switching")}
               </Badge>
             )}

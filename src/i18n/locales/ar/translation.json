@@ -16,7 +16,8 @@
     "history": "السجل",
     "debug": "تصحيح الأخطاء",
     "about": "حول",
-    "models": "النماذج"
+    "models": "النماذج",
+    "navigation": "Settings navigation"
   },
   "onboarding": {
     "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",
@@ -194,6 +195,11 @@
       "pushToTalk": {
         "label": "اضغط للتحدث",
         "description": "استمر في الضغط للتسجيل، واترك للتوقف"
+      },
+      "secondaryLanguage": {
+        "title": "Second language",
+        "description": "A language you often mix into your main one, such as English terms in Russian speech. Whisper models then keep those words in their own spelling instead of transliterating or translating them.",
+        "none": "None"
       }
     },
     "sound": {
@@ -365,6 +371,18 @@
       "fillerWordRemoval": {
         "title": "إزالة كلمات الحشو",
         "description": "يزيل كلمات التردد الشائعة من النصوص. عطّل هذا الخيار للاحتفاظ بها."
+      },
+      "numbersAsDigits": {
+        "title": "Numbers as digits",
+        "description": "Write dates, years, phone numbers, prices and other quantities with digits when the context calls for it (\"25 March\", \"+7 916 123-45-67\"). Small standalone numbers stay as words. Russian and English."
+      },
+      "builtinDictionary": {
+        "title": "Brand and tech dictionary",
+        "description": "Fix the spelling of well-known brands and technical terms after transcription, including Russian transliterations (\"гитхаб\" → GitHub, \"чат джипити\" → ChatGPT). Works offline and adds no noticeable delay."
+      },
+      "runAsAdministrator": {
+        "title": "Always run as administrator",
+        "description": "Start UXO with administrator rights every time (Windows asks for confirmation), so dictation also works in terminals and shells running as administrator. Without it, Windows blocks input into those windows."
       }
     },
     "postProcessing": {
@@ -637,7 +655,15 @@
     "open": "فتح",
     "copy": "نسخ",
     "clear": "مسح",
-    "noOptionsFound": "لم يتم العثور على خيارات"
+    "noOptionsFound": "لم يتم العثور على خيارات",
+    "reset": "Reset",
+    "moreInfo": "More information",
+    "copyToClipboard": "Copy to clipboard",
+    "notAvailable": "Not available",
+    "selectOption": "Select an option...",
+    "play": "Play",
+    "pause": "Pause",
+    "previewSound": "Preview sound theme (plays start then stop)"
   },
   "accessibility": {
     "permissionsDescription": ".يحتاج UXO إلى أذونات إمكانية الوصول لكتابة النص المفرغ",
@@ -663,7 +689,8 @@
     "elevatedPaste": "يعمل التطبيق المستهدف بصلاحيات المسؤول. تم نسخ النص المفرّغ إلى الحافظة.",
     "elevatedPasteAction": "إعادة تشغيل UXO",
     "elevatedRestartFailed": "تعذّر على UXO إعادة التشغيل بصلاحيات المسؤول.",
-    "transcriptionFailedTitle": "فشل التفريغ النصي"
+    "transcriptionFailedTitle": "فشل التفريغ النصي",
+    "unknown": "Unknown error"
   },
   "appLanguage": {
     "title": "لغة التطبيق",
@@ -680,7 +707,8 @@
   },
   "overlay": {
     "transcribing": "...جاري التفريغ",
-    "processing": "...جاري المعالجة"
+    "processing": "...جاري المعالجة",
+    "cancel": "Cancel"
   },
   "whatsNew": {
     "title": "الجديد في UXO v{{version}}"
@@ -695,5 +723,40 @@
     "learnMore": "كيفية الإصلاح",
     "recorderBlocked": "لا يمكن تسجيل الاختصارات الآن — يحجب Secure Input في macOS أحداث المفاتيح. عالج تحذير Secure Input أولاً.",
     "dismiss": "تجاهل"
+  },
+  "updates": {
+    "title": "Updates",
+    "description": "Check GitHub for a newer UXO. You can read what changed in every new version before downloading; the installer is verified with its SHA-256 checksum before it runs.",
+    "checkNow": "Check for updates",
+    "checking": "Checking…",
+    "upToDate": "You're up to date",
+    "checkFailed": "Could not check for updates: {{error}}",
+    "available": "Version {{version}} is available",
+    "whatsNew": "What's new",
+    "toast": "UXO {{version}} is available",
+    "pill": "Update {{version}}",
+    "readyPill": "Restart to update",
+    "dialogTitle": "UXO {{version}} is available",
+    "dialogDescription": "You have version {{current}}. Here is what changed since then.",
+    "openReleasePage": "Release page",
+    "download": "Download",
+    "downloadWithSize": "Download ({{size}})",
+    "downloading": "Downloading…",
+    "progress": "{{percent}}% · {{downloaded}} of {{total}}",
+    "verified": "The update is downloaded and its checksum verified. UXO will close, install the update and start again.",
+    "failed": "Update failed: {{error}}",
+    "installAndRestart": "Install and restart",
+    "installing": "Starting installer…",
+    "preview": "Preview",
+    "noNotes": "No release notes.",
+    "blocker": {
+      "portable": "This is a portable copy of UXO. Download the new version from the release page and replace this folder.",
+      "unsupported_platform": "Automatic installation is available on Windows. Download the new version from the release page.",
+      "missing_asset": "This release has no verified installer for your system. Download it from the release page."
+    },
+    "autoCheck": {
+      "title": "Check for updates automatically",
+      "description": "Look for new versions in the background a few times a day. Only the public GitHub release list is requested; nothing is downloaded or installed without your confirmation."
+    }
   }
 }
