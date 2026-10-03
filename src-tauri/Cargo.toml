@@ -1,6 +1,6 @@
 [package]
 name = "uxo"
-version = "0.1.1"
+version = "0.1.2"
 description = "Fast, private, local speech-to-text for Windows"
 authors = ["UXO contributors"]
 edition = "2021"

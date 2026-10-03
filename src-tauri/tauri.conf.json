@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "UXO",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "identifier": "org.gardar.uxo",
   "build": {
     "beforeDevCommand": "bun run dev",

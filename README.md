@@ -9,11 +9,11 @@
 ![UXO — Local voice. Instant text.](docs/assets/github-social-preview.jpg)
 
 <p align="center">
-  <a href="https://github.com/bglglzd/uxo/releases/download/v0.1.1/UXO_0.1.1_x64-setup.exe"><img alt="Download UXO v0.1.1 for Windows x64" src="https://img.shields.io/badge/Download_UXO_v0.1.1-Windows_x64-0891b2?style=for-the-badge&amp;logo=windows11&amp;logoColor=white"></a>
+  <a href="https://github.com/bglglzd/uxo/releases/download/v0.1.2/UXO_0.1.2_x64-setup.exe"><img alt="Download UXO v0.1.2 for Windows x64" src="https://img.shields.io/badge/Download_UXO_v0.1.2-Windows_x64-0891b2?style=for-the-badge&amp;logo=windows11&amp;logoColor=white"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/bglglzd/uxo/releases/tag/v0.1.1"><img alt="Preview release" src="https://img.shields.io/badge/release-v0.1.1_preview-f59e0b?style=flat-square"></a>
+  <a href="https://github.com/bglglzd/uxo/releases/tag/v0.1.2"><img alt="Preview release" src="https://img.shields.io/badge/release-v0.1.2_preview-f59e0b?style=flat-square"></a>
   <img alt="Local speech recognition" src="https://img.shields.io/badge/ASR-local-14b8a6?style=flat-square">
   <img alt="24 interface languages" src="https://img.shields.io/badge/UI_languages-24-64748b?style=flat-square">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-64748b?style=flat-square"></a>
@@ -24,7 +24,7 @@
 UXO is a fast, private desktop dictation app. Press a global shortcut, speak, and UXO transcribes locally before pasting clean Unicode text into whichever app has focus.
 
 > [!WARNING]
-> **v0.1.1 is an unsigned Windows x64 Preview.** Windows SmartScreen may display an “Unknown publisher” warning. Download only from the [official UXO release](https://github.com/bglglzd/uxo/releases/tag/v0.1.1) and verify the file against its published [SHA-256 checksums](https://github.com/bglglzd/uxo/releases/download/v0.1.1/SHA256SUMS.txt).
+> **v0.1.2 is an unsigned Windows x64 Preview.** Windows SmartScreen may display an “Unknown publisher” warning. Download only from the [official UXO release](https://github.com/bglglzd/uxo/releases/tag/v0.1.2) and verify the file against its published [SHA-256 checksums](https://github.com/bglglzd/uxo/releases/download/v0.1.2/SHA256SUMS.txt).
 
 ## Why UXO
 
@@ -37,7 +37,7 @@ UXO is a fast, private desktop dictation app. Press a global shortcut, speak, an
 
 ## Get started
 
-1. **[Download UXO v0.1.1 for Windows x64](https://github.com/bglglzd/uxo/releases/download/v0.1.1/UXO_0.1.1_x64-setup.exe).** An MSI package is also available on the [release page](https://github.com/bglglzd/uxo/releases/tag/v0.1.1).
+1. **[Download UXO v0.1.2 for Windows x64](https://github.com/bglglzd/uxo/releases/download/v0.1.2/UXO_0.1.2_x64-setup.exe).** An MSI package is also available on the [release page](https://github.com/bglglzd/uxo/releases/tag/v0.1.2).
 2. Run the installer. Because this Preview is not code-signed, Windows may ask you to review an unknown-publisher warning.
 3. Complete onboarding and download a speech model. Models are not bundled with the installer.
 4. Put the caret in any text field, press the configured shortcut, and speak.
@@ -126,10 +126,10 @@ Native Windows builds require the verified MSVC, Visual Studio CMake, and Ninja 
 
 ## Preview scope
 
-- The downloadable release currently targets **Windows x64**. macOS and Linux development paths exist, but they are not qualified UXO v0.1.1 release targets.
+- The downloadable release currently targets **Windows x64**. macOS and Linux development paths exist, but they are not qualified UXO v0.1.2 release targets.
 - Windows inference is intentionally CPU-only in this Preview. GPU acceleration may return later as an explicit opt-in mode.
-- The installer is not code-signed and there is no signed production update channel yet.
-- Administrator-input compatibility elevates the full UXO process for one session; use it only on a trusted personal installation and only while needed.
+- The installer is not code-signed. In-app updates verify each installer against the release's SHA-256 checksums, but there is no code-signed production update channel yet.
+- Administrator-input compatibility elevates the full UXO process (for one session, or on every launch when **Always run as administrator** is enabled); use it only on a trusted personal installation and only while needed.
 - Language quality varies, and current performance notes are not a substitute for a broad real-world accuracy benchmark.
 - Optional remote post-processing has the privacy and local-secret-storage caveats described above.
 
@@ -139,6 +139,7 @@ Please report reproducible UXO problems through the repository's [issue tracker]
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Initial Nemotron performance probe](docs/BENCHMARKS.md)
+- [v0.1.2 release notes](docs/releases/v0.1.2.md)
 - [v0.1.1 release notes](docs/releases/v0.1.1.md)
 - [v0.1.0 release notes](docs/releases/v0.1.0.md)
 - [Third-party software and model notices](THIRD_PARTY_NOTICES.md)
