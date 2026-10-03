@@ -9,11 +9,11 @@
 ![UXO — локальный голос, мгновенный текст.](assets/github-social-preview.jpg)
 
 <p align="center">
-  <a href="https://github.com/bglglzd/uxo/releases/download/v0.1.1/UXO_0.1.1_x64-setup.exe"><img alt="Скачать UXO v0.1.1 для Windows x64" src="https://img.shields.io/badge/Скачать_UXO_v0.1.1-Windows_x64-0891b2?style=for-the-badge&amp;logo=windows11&amp;logoColor=white"></a>
+  <a href="https://github.com/bglglzd/uxo/releases/download/v0.1.2/UXO_0.1.2_x64-setup.exe"><img alt="Скачать UXO v0.1.2 для Windows x64" src="https://img.shields.io/badge/Скачать_UXO_v0.1.2-Windows_x64-0891b2?style=for-the-badge&amp;logo=windows11&amp;logoColor=white"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/bglglzd/uxo/releases/tag/v0.1.1"><img alt="Предварительный выпуск" src="https://img.shields.io/badge/релиз-v0.1.1_preview-f59e0b?style=flat-square"></a>
+  <a href="https://github.com/bglglzd/uxo/releases/tag/v0.1.2"><img alt="Предварительный выпуск" src="https://img.shields.io/badge/релиз-v0.1.2_preview-f59e0b?style=flat-square"></a>
   <img alt="Локальное распознавание речи" src="https://img.shields.io/badge/ASR-локально-14b8a6?style=flat-square">
   <img alt="24 языка интерфейса" src="https://img.shields.io/badge/языков_интерфейса-24-64748b?style=flat-square">
   <a href="../LICENSE"><img alt="Лицензия MIT" src="https://img.shields.io/badge/лицензия-MIT-64748b?style=flat-square"></a>
@@ -24,7 +24,7 @@
 UXO — быстрое и приватное приложение для голосового ввода. Нажмите глобальную горячую клавишу, произнесите текст, и UXO локально распознает речь и вставит корректный Unicode-текст в активное приложение.
 
 > [!WARNING]
-> **v0.1.1 — предварительная неподписанная версия для Windows x64.** Windows SmartScreen может показать предупреждение «Неизвестный издатель». Скачивайте программу только из [официального релиза UXO](https://github.com/bglglzd/uxo/releases/tag/v0.1.1) и сверяйте файл с опубликованными [контрольными суммами SHA-256](https://github.com/bglglzd/uxo/releases/download/v0.1.1/SHA256SUMS.txt).
+> **v0.1.2 — предварительная неподписанная версия для Windows x64.** Windows SmartScreen может показать предупреждение «Неизвестный издатель». Скачивайте программу только из [официального релиза UXO](https://github.com/bglglzd/uxo/releases/tag/v0.1.2) и сверяйте файл с опубликованными [контрольными суммами SHA-256](https://github.com/bglglzd/uxo/releases/download/v0.1.2/SHA256SUMS.txt).
 
 ## Зачем нужен UXO
 
@@ -37,7 +37,7 @@ UXO — быстрое и приватное приложение для гол�
 
 ## Быстрый старт
 
-1. **[Скачайте UXO v0.1.1 для Windows x64](https://github.com/bglglzd/uxo/releases/download/v0.1.1/UXO_0.1.1_x64-setup.exe).** MSI-пакет также доступен на [странице релиза](https://github.com/bglglzd/uxo/releases/tag/v0.1.1).
+1. **[Скачайте UXO v0.1.2 для Windows x64](https://github.com/bglglzd/uxo/releases/download/v0.1.2/UXO_0.1.2_x64-setup.exe).** MSI-пакет также доступен на [странице релиза](https://github.com/bglglzd/uxo/releases/tag/v0.1.2).
 2. Запустите установщик. Поскольку эта Preview-версия не подписана кодовой подписью, Windows может попросить подтвердить запуск от неизвестного издателя.
 3. Пройдите первоначальную настройку и загрузите модель распознавания. Модели не входят в установщик.
 4. Поставьте курсор в любое текстовое поле, нажмите настроенную горячую клавишу и говорите.
@@ -126,10 +126,10 @@ cargo test --manifest-path src-tauri/Cargo.toml --lib
 
 ## Границы Preview-версии
 
-- Готовый релиз сейчас предназначен для **Windows x64**. Пути разработки для macOS и Linux существуют, но эти системы не являются проверенными целями релиза UXO v0.1.1.
+- Готовый релиз сейчас предназначен для **Windows x64**. Пути разработки для macOS и Linux существуют, но эти системы не являются проверенными целями релиза UXO v0.1.2.
 - В этой Preview-версии распознавание под Windows намеренно работает только на CPU. Ускорение на GPU в будущем может вернуться как явно включаемый режим.
-- Установщик не подписан кодовой подписью; подписанного стабильного канала обновлений пока нет.
-- Режим ввода в приложения с правами администратора повышает права всего процесса UXO на один сеанс; используйте его только на доверенном личном компьютере и только при необходимости.
+- Установщик не подписан кодовой подписью. Встроенное обновление сверяет каждый установщик с контрольными суммами SHA-256 релиза, но подписанного стабильного канала обновлений пока нет.
+- Режим ввода в приложения с правами администратора повышает права всего процесса UXO (на один сеанс или при каждом запуске, если включено **Всегда запускать от администратора**); используйте его только на доверенном личном компьютере и только при необходимости.
 - Качество зависит от языка, а текущие заметки о производительности не заменяют широкого тестирования точности в реальных условиях.
 - Для необязательной внешней постобработки действуют описанные выше ограничения приватности и хранения локальных секретов.
 
@@ -139,6 +139,7 @@ cargo test --manifest-path src-tauri/Cargo.toml --lib
 
 - [Архитектура](ARCHITECTURE.md)
 - [Первоначальная проверка производительности Nemotron](BENCHMARKS.md)
+- [Описание релиза v0.1.2](releases/v0.1.2.md)
 - [Описание релиза v0.1.1](releases/v0.1.1.md)
 - [Описание релиза v0.1.0](releases/v0.1.0.md)
 - [Сторонние компоненты и модели](../THIRD_PARTY_NOTICES.md)
