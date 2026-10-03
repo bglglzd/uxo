@@ -23,6 +23,9 @@ import { AccelerationSelector } from "../AccelerationSelector";
 import { LazyStreamClose } from "../LazyStreamClose";
 import { FillerWordRemoval } from "../FillerWordRemoval";
 import { WindowsElevatedInput } from "../WindowsElevatedInput";
+import { RunAsAdministrator } from "../RunAsAdministrator";
+import { NumbersAsDigits } from "../NumbersAsDigits";
+import { BuiltinDictionary } from "../BuiltinDictionary";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -42,6 +45,7 @@ export const AdvancedSettings: React.FC = () => {
 
       <SettingsGroup title={t("settings.advanced.groups.output")}>
         <WindowsElevatedInput descriptionMode="inline" grouped={true} />
+        <RunAsAdministrator descriptionMode="tooltip" grouped={true} />
         <PasteMethodSetting descriptionMode="tooltip" grouped={true} />
         <TypingToolSetting descriptionMode="tooltip" grouped={true} />
         <ClipboardHandlingSetting descriptionMode="tooltip" grouped={true} />
@@ -51,6 +55,8 @@ export const AdvancedSettings: React.FC = () => {
       <SettingsGroup title={t("settings.advanced.groups.transcription")}>
         <VoiceActivityDetection descriptionMode="tooltip" grouped={true} />
         <FillerWordRemoval descriptionMode="tooltip" grouped={true} />
+        <NumbersAsDigits descriptionMode="tooltip" grouped={true} />
+        <BuiltinDictionary descriptionMode="tooltip" grouped={true} />
         <CustomWords descriptionMode="tooltip" grouped />
         <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>

@@ -11,8 +11,15 @@ interface CustomWordsProps {
   grouped?: boolean;
 }
 
+// Longest entry accepted; replacement rules ("спейс икс → SpaceX") need more
+// room than single words.
+const MAX_ENTRY_LENGTH = 100;
+
+// "alias -> Replacement" and "alias => Replacement" are stored with the
+// canonical arrow so the angle bracket survives the markup-character filter.
 const normalizeCustomWord = (word: string) =>
   word
+    .replace(/\s*(?:=>|->|→)\s*/g, " → ")
     .replace(/[<>"']/g, "")
     .replace(/\s+/g, " ")
     .trim();
@@ -26,7 +33,7 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
     const normalizedWord = normalizeCustomWord(newWord);
 
     const handleAddWord = () => {
-      if (normalizedWord && normalizedWord.length <= 50) {
+      if (normalizedWord && normalizedWord.length <= MAX_ENTRY_LENGTH) {
         if (customWords.includes(normalizedWord)) {
           toast.error(
             t("settings.advanced.customWords.duplicate", {
@@ -65,7 +72,7 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
           <div className="flex items-center gap-2">
             <Input
               type="text"
-              className="max-w-40"
+              className="w-56 max-w-full"
               value={newWord}
               onChange={(e) => setNewWord(e.target.value)}
               onKeyDown={handleKeyPress}
@@ -77,7 +84,7 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
               onClick={handleAddWord}
               disabled={
                 !normalizedWord ||
-                normalizedWord.length > 50 ||
+                normalizedWord.length > MAX_ENTRY_LENGTH ||
                 isUpdating("custom_words")
               }
               variant="primary"

@@ -367,11 +367,12 @@ pub struct AppSettings {
     pub start_hidden: bool,
     #[serde(default = "default_autostart_enabled")]
     pub autostart_enabled: bool,
-    /// Legacy updater preferences retained only so existing predecessor stores
-    /// deserialize without data loss. UXO 0.1 has no network updater or UI for
-    /// these inert fields.
+    /// Check GitHub Releases for a newer UXO in the background. The check
+    /// sends no user data; downloads and installs always need confirmation.
     #[serde(default = "default_update_checks_enabled")]
     pub update_checks_enabled: bool,
+    /// Legacy preference retained so existing predecessor stores deserialize
+    /// without data loss. UXO shows release notes before updating instead.
     #[serde(default = "default_show_whats_new_on_update")]
     pub show_whats_new_on_update: bool,
     /// Legacy release-notes marker retained for settings compatibility. UXO 0.1
@@ -398,6 +399,11 @@ pub struct AppSettings {
     pub translate_to_english: bool,
     #[serde(default = "default_selected_language")]
     pub selected_language: String,
+    /// A language often mixed into dictation in `selected_language` (e.g.
+    /// English terms in Russian speech). Whisper models get a code-switching
+    /// prompt for the pair; `None` disables it.
+    #[serde(default)]
+    pub secondary_language: Option<String>,
     #[serde(default = "default_overlay_position")]
     pub overlay_position: OverlayPosition,
     #[serde(default = "default_debug_mode")]
@@ -406,6 +412,16 @@ pub struct AppSettings {
     pub log_level: LogLevel,
     #[serde(default)]
     pub custom_words: Vec<String>,
+    /// Apply the built-in brand/terminology dictionary after transcription.
+    #[serde(default = "default_builtin_dictionary_enabled")]
+    pub builtin_dictionary_enabled: bool,
+    /// Windows: relaunch elevated through UAC at every start so dictation can
+    /// reach administrator terminals. Opt-in; ignored for portable installs.
+    #[serde(default)]
+    pub run_as_administrator: bool,
+    /// Write spelled-out dates, phone numbers and quantities as digits.
+    #[serde(default = "default_numbers_as_digits")]
+    pub numbers_as_digits: bool,
     #[serde(default)]
     pub model_unload_timeout: ModelUnloadTimeout,
     #[serde(default = "default_word_correction_threshold")]
@@ -574,6 +590,14 @@ fn default_debug_mode() -> bool {
 
 fn default_log_level() -> LogLevel {
     LogLevel::Debug
+}
+
+fn default_numbers_as_digits() -> bool {
+    true
+}
+
+fn default_builtin_dictionary_enabled() -> bool {
+    true
 }
 
 fn default_word_correction_threshold() -> f64 {
@@ -911,10 +935,14 @@ pub fn get_default_settings() -> AppSettings {
         selected_output_device: None,
         translate_to_english: false,
         selected_language: default_selected_language(),
+        secondary_language: None,
         overlay_position: default_overlay_position(),
         debug_mode: false,
         log_level: default_log_level(),
         custom_words: Vec::new(),
+        builtin_dictionary_enabled: true,
+        run_as_administrator: false,
+        numbers_as_digits: default_numbers_as_digits(),
         model_unload_timeout: ModelUnloadTimeout::default(),
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),

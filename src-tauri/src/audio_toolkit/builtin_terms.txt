@@ -1,0 +1,196 @@
+# Built-in term dictionary for post-transcription correction.
+#
+# Format: Canonical = alias | alias | ...
+# - Matching ignores case, punctuation inside a word, and ё/е differences;
+#   aliases may span up to four words ("чат джипити").
+# - The canonical spelling also matches itself when its casing is distinctive
+#   (GitHub, iPhone, Node.js, API), which fixes "github" -> "GitHub". Plainly
+#   capitalized names (Word, Teams, Apple) never match the ordinary word.
+# - Only add aliases that are NOT ordinary words in any language UXO supports.
+#   "питон" (snake), "телеграмма" (a telegram), "курсор", "зум", "кафка",
+#   "react", "swift", "word", "excel" and similar are deliberately absent.
+
+# --- Messengers & social ---
+Telegram = телеграм | телеграме | телеграма | телеграму | телеграмом
+WhatsApp = ватсап | ватсапе | ватсапа | ватсапу | вотсап | вотсапе | вотсапа | вацап | вацапе | вацапа | whats app
+Viber = вайбер | вайбере | вайбера
+Instagram = инстаграм | инстаграме | инстаграма | инстаграму | инста | инсте | инсту | инсты
+Facebook = фейсбук | фейсбуке | фейсбука | фэйсбук | face book
+TikTok = тикток | тиктоке | тиктока | тик ток | тик токе | tik tok
+YouTube = ютуб | ютубе | ютуба | ютубу | ютубом | ютьюб | ютьюбе | ютьюба | you tube
+LinkedIn = линкедин | линкедине | линкедина | linked in
+Discord = дискорд | дискорде | дискорда | дискорду
+Skype = скайп | скайпе | скайпа
+Slack = слак | слаке | слака
+Twitter = твиттер | твиттере | твиттера | твитер | твитере
+Reddit = реддит | реддите | реддита | редит
+Twitch = твич | твиче | твича
+Pinterest = пинтерест | пинтересте
+Snapchat = снэпчат | снапчат
+VK = вэка
+ВКонтакте = вконтакте | в контакте
+Netflix = нетфликс | нетфликсе
+Spotify = спотифай | спотифае | спотифая
+
+# --- Companies, products, stores ---
+Google = гугл | гугле | гугла | гуглу | гуглом
+Google Docs = гугл докс | гугл док | google doc
+Google Drive = гугл драйв | гугл диск
+Google Meet = гугл мит
+Gmail = джимейл | джимэйл | гмейл | g mail
+Apple = эппл | эпл | эппле
+iPhone = айфон | айфоне | айфона | айфону | айфоном | i phone
+iPad = айпад | айпаде | айпада | i pad
+MacBook = макбук | макбуке | макбука | макбуком | mac book
+macOS = макос | мак ос | mac os
+iOS = айос | ай ос | i os
+App Store = апп стор | эпп стор | эп стор | appstore
+Google Play = гугл плей | google play
+Android = андроид | андроиде | андроида
+Microsoft = майкрософт | майкрософте | майкрософта | микрософт | micro soft
+Windows = виндовс | виндовсе | виндоус | виндоусе | винда | винде | винду
+Excel = эксель | экселе | экселя | эксел
+Word = ворд | ворде | ворда
+PowerPoint = пауэрпоинт | пауэр поинт | повер поинт | power point
+Outlook = аутлук | аутлуке | аутлука
+Teams = тимс | тимсе
+OneDrive = ван драйв | уан драйв | one drive
+SharePoint = шарепоинт | шейрпоинт | share point
+Linux = линукс | линуксе | линукса
+Ubuntu = убунту | убунте
+Amazon = амазон | амазоне | амазона
+AWS = эй дабл ю эс | авс
+Azure = азур | эжур
+Samsung = самсунг | самсунге | самсунга
+Xiaomi = сяоми | ксиоми | ксяоми
+Huawei = хуавей | хуавэй
+PlayStation = плейстейшн | плейстейшен | play station
+Xbox = иксбокс | икс бокс | x box
+Steam = стим | стиме
+PayPal = пейпал | пэйпал | pay pal
+Airbnb = эйрбиэнби | air bnb
+Uber = убер | убере | убера
+NVIDIA = нвидиа | нвидия | энвидиа | энвидия | nvidea
+Intel = интел | интеле
+AMD = эй эм ди
+Яндекс = yandex
+Яндекс Go = яндекс го
+Сбер = сбер
+Сбербанк = сбербанк
+Т-Банк = т банк | тбанк
+Тинькофф = тинькоф | тиньков
+Госуслуги = госуслуги
+Авито = авито
+Wildberries = вайлдберриз | вайлдбериз | валдберис
+Хабр = хабр | habr
+
+# --- AI ---
+ChatGPT = чатгпт | чат гпт | чат джипити | чатджипити | чат джи пи ти | чат gpt | chat gpt | chat g p t
+GPT = джипити | джи пи ти | гпт | g p t
+GPT-4 = гпт четыре | джипити четыре | gpt четыре
+GPT-4o = гпт четыре о | джипити четыре о | gpt 4o
+OpenAI = опенаи | опен аи | опенэйай | опен эйай | опен эй ай | оупен эйай | оупен эй ай | open ai
+Claude = клод | клоду | клода | клодом
+Claude Code = клод код | клауд код
+Anthropic = антропик | антропике | энтропик | anthropik
+Gemini = джемини | джеминай | гемини
+Copilot = копайлот | копилот | ко пайлот | co pilot
+GitHub Copilot = гитхаб копайлот | гитхаб копилот
+Midjourney = миджорни | мидджорни | мид джорни | mid journey
+DeepSeek = дипсик | дип сик | deep seek
+Perplexity = перплексити
+Hugging Face = хаггинг фейс | хагинг фейс | huggingface
+LLM = эл эл эм | элэлэм
+Whisper = вишпер | виспер
+Ollama = оллама | олама
+LangChain = лангчейн | ленгчейн | lang chain
+Stable Diffusion = стейбл диффьюжн | стейбл дифьюжн
+
+# --- Development ---
+GitHub = гитхаб | гитхабе | гитхаба | гитхабу | гитхабом | гит хаб | git hub
+GitLab = гитлаб | гитлабе | гитлаба | гит лаб | git lab
+GitHub Actions = гитхаб экшенс | гитхаб экшнс
+Git = гит | гите | гита
+Bitbucket = битбакет | битбакете | bit bucket
+Stack Overflow = стек оверфлоу | стэк оверфлоу | stackoverflow
+VS Code = вс код | вс коде | вэ эс код | ви эс код | vscode | vs code | визуал студио код
+Visual Studio = визуал студио | вижуал студио
+JetBrains = джетбрейнс | jet brains
+IntelliJ IDEA = интеллидж | интелидж | intellij
+PyCharm = пайчарм | py charm
+Xcode = иксКод | икс код | x code
+Docker = докер | докере | докера | докеру | докером
+Kubernetes = кубернетис | кубернетес | кубернетисе | кубер | кубере | k8s
+Terraform = терраформ | тераформ
+Ansible = ансибл | ансибле
+Jenkins = дженкинс | дженкинсе
+Nginx = энджинкс | нджинкс | нгинкс | engine x
+Linux Mint = линукс минт
+JavaScript = джаваскрипт | джава скрипт | javascript | java script
+TypeScript = тайпскрипт | тайп скрипт | type script
+Python = пайтон | пайтоне | пайтона | пайтону
+Java = джава | джаве | джавы | джаву
+Go = голанг | гоуланг | golang | go lang
+Rust = раст | расте | раста
+C++ = си плюс плюс | си плас плас | сиплюсплюс
+C# = си шарп | сишарп | c sharp
+PHP = пиэйчпи | пи эйч пи | пхп
+Ruby on Rails = руби он рейлс
+SQL = эс кью эль | эскьюэль
+PostgreSQL = постгрес | постгресе | постгреса | постгрескьюэль | постгрес кью эль | postgre sql
+MySQL = майэскьюэль | май эс кью эль | май сиквел | my sql
+SQLite = эскьюлайт | эс кью лайт | sql lite
+MongoDB = монгодб | монго дб | монго ди би | mongo db
+Redis = редис | редисе | редиса
+Elasticsearch = эластиксерч | эластик серч | elastic search
+ClickHouse = кликхаус | клик хаус | click house
+GraphQL = графкуэль | граф кью эль | graph ql
+REST API = рест апи | рест эйпиай
+API = апи | эйпиай | эй пи ай | a p i
+SDK = эс ди кей | эсдикей
+YAML = ямл | ямле | ямла
+HTML = эйчтиэмэль | хтмл | эйч ти эм эль
+CSS = цсс | си эс эс | сиэсэс
+Tailwind CSS = тейлвинд | тейлвинде
+Node.js = нод джс | нода джс | нод джей эс | нода жс | node js | nodejs
+Next.js = некст джс | некст жс | некстджс | next js | nextjs
+Vue.js = вью джс | вью жс | вьюджс | vue js | vuejs
+Nuxt = накст | нукст
+Angular = ангуляр | ангуляре | ангуляра | энгьюлар
+Svelte = свелт | свелте
+React Native = реакт натив | реакт нейтив
+Django = джанго
+Flask = фласк | фласке
+FastAPI = фастапи | фаст апи | фаст эйпиай | fast api
+Spring Boot = спринг бут
+Laravel = ларавел | ларавель | ларавеле
+Tauri = таури | таурі
+Figma = фигма | фигме | фигмы | фигму | фигмой
+Jira = джира | джире | джиры | джиру | джирой
+Confluence = конфлюенс | конфлюенсе | конфлюэнс
+Notion = ноушн | ноушен | ноушне | ноушене | ноушена
+Trello = трелло | трело
+Obsidian = обсидиан | обсидиане
+Postman = постман | постмане
+Vercel = версел | верцел | вёрсел
+Netlify = нетлифай
+Heroku = хероку | героку
+Cloudflare = клаудфлер | клауд флер | cloud flare
+DevOps = девопс | дев опс | dev ops
+CI/CD = си ай си ди | сиайсиди | ci cd
+pull request = пулл реквест | пул реквест | пулреквест | пулл риквест
+merge request = мерж реквест | мердж реквест
+UI = юай | ю ай
+UX = юикс | ю икс
+UI/UX = юай юикс | юай ю икс
+Wi-Fi = вайфай | вай фай | wifi | wi fi
+Bluetooth = блютуз | блютус | блютузе | blue tooth
+USB = юэсби | ю эс би
+USB-C = юэсби си | тайп си
+PDF = пдф | пэдээф | пи ди эф
+URL = юрл | ю ар эль
+SSH = эс эс эйч | ссш
+VPN = впн | ви пи эн | випиэн
+CPU = цпу | си пи ю
+GPU = гпу | джи пи ю | джипию
+SSD = эс эс ди | ссд

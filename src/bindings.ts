@@ -304,6 +304,46 @@ async updateCustomWords(words: string[]) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async changeBuiltinDictionarySetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_builtin_dictionary_setting", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeRunAsAdministratorSetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_run_as_administrator_setting", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeUpdateChecksSetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_update_checks_setting", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeSecondaryLanguageSetting(language: string | null) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_secondary_language_setting", { language }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeNumbersAsDigitsSetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_numbers_as_digits_setting", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 /**
  * Temporarily unregister all bindings while the user is recording a
  * shortcut in the UI. This avoids firing actions while keys are recorded.
@@ -874,13 +914,48 @@ async updateRecordingRetentionPeriod(period: string) : Promise<Result<null, stri
 },
 /**
  * Checks if the Mac is a laptop by detecting battery presence
- * 
+ *
  * This uses pmset to check for battery information.
  * Returns true if a battery is detected (laptop), false otherwise (desktop)
  */
 async isLaptop() : Promise<Result<boolean, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("is_laptop") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Checks GitHub Releases for a version newer than the running one.
+ */
+async checkForUpdate() : Promise<Result<UpdateInfo | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("check_for_update") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Downloads the installer found by the last [`check_for_update`] and verifies
+ * its SHA-256. Emits [`DOWNLOAD_PROGRESS_EVENT`] while downloading.
+ */
+async downloadUpdate() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("download_update") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Starts the verified installer in passive update mode and quits UXO. The
+ * installer relaunches UXO when it finishes.
+ */
+async installUpdate() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("install_update") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -925,19 +1000,46 @@ settings_schema_version?: number;
  * Defaults to empty on partial stores; the load path merges in the
  * default bindings for any missing keys before the settings are used.
  */
-bindings?: Partial<{ [key in string]: ShortcutBinding }>; push_to_talk?: boolean; audio_feedback?: boolean; audio_feedback_volume?: number; sound_theme?: SoundTheme; start_hidden?: boolean; autostart_enabled?: boolean; update_checks_enabled?: boolean; show_whats_new_on_update?: boolean; 
+bindings?: Partial<{ [key in string]: ShortcutBinding }>; push_to_talk?: boolean; audio_feedback?: boolean; audio_feedback_volume?: number; sound_theme?: SoundTheme; start_hidden?: boolean; autostart_enabled?: boolean; 
 /**
- * The app version whose What's New the user has already seen. Fresh installs
- * default to the current version (nothing is "new" to them). Existing users
- * upgrading from before this key existed are blanked by the migration so they
- * see the current release's notes — see `apply_settings_migrations`.
+ * Check GitHub Releases for a newer UXO in the background. The check
+ * sends no user data; downloads and installs always need confirmation.
+ */
+update_checks_enabled?: boolean; 
+/**
+ * Legacy preference retained so existing predecessor stores deserialize
+ * without data loss. UXO shows release notes before updating instead.
+ */
+show_whats_new_on_update?: boolean; 
+/**
+ * Legacy release-notes marker retained for settings compatibility. UXO 0.1
+ * does not read it to display update content.
  */
 whats_new_last_seen_version?: string; selected_model?: string; onboarding_completed?: boolean; always_on_microphone?: boolean; selected_microphone?: string | null; 
 /**
  * Which input channel to use on the selected microphone device.
  * None means "average all channels" (original behavior).
  */
-selected_channel?: number | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: SecretMap; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; theme?: Theme; experimental_enabled?: boolean; lazy_stream_close?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; paste_delay_after_ms?: number; 
+selected_channel?: number | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; 
+/**
+ * A language often mixed into dictation in `selected_language` (e.g.
+ * English terms in Russian speech). Whisper models get a code-switching
+ * prompt for the pair; `None` disables it.
+ */
+secondary_language?: string | null; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; 
+/**
+ * Apply the built-in brand/terminology dictionary after transcription.
+ */
+builtin_dictionary_enabled?: boolean; 
+/**
+ * Windows: relaunch elevated through UAC at every start so dictation can
+ * reach administrator terminals. Opt-in; ignored for portable installs.
+ */
+run_as_administrator?: boolean; 
+/**
+ * Write spelled-out dates, phone numbers and quantities as digits.
+ */
+numbers_as_digits?: boolean; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: SecretMap; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; theme?: Theme; experimental_enabled?: boolean; lazy_stream_close?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; paste_delay_after_ms?: number; 
 /**
  * Debug-gated ("beta") receipt-sequenced paste: restore the clipboard only
  * after the target app actually reads the transcript, instead of after a
@@ -980,6 +1082,23 @@ export type ImplementationChangeResult = { success: boolean;
  * List of binding IDs that were reset to defaults due to incompatibility
  */
 reset_bindings: string[] }
+/**
+ * Why an update can be read about but not installed from inside the app.
+ */
+export type InstallBlocker = 
+/**
+ * Portable installs live next to their data; the installer would put a
+ * second copy in the user's profile instead of updating this one.
+ */
+"portable" | 
+/**
+ * No in-place installer for this OS/architecture.
+ */
+"unsupported_platform" | 
+/**
+ * The release has no installer or no checksum for it.
+ */
+"missing_asset"
 export type KeyboardDiagnosticReport = { secure_input_enabled: boolean; culprit_pid: number | null; culprit_name: string | null; 
 /**
  * Counts only — key identity is deliberately never captured.
@@ -1029,6 +1148,7 @@ export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_
 export type PermissionAccess = "allowed" | "denied" | "unknown"
 export type PostProcessProvider = { id: string; label: string; base_url: string; allow_base_url_edit?: boolean; models_endpoint?: string | null; supports_structured_output?: boolean }
 export type RecordingRetentionPeriod = "never" | "preserve_limit" | "days_3" | "weeks_2" | "months_3"
+export type ReleaseNotes = { version: string; name: string; published_at: string | null; body: string; prerelease: boolean; url: string }
 export type SecretMap = Partial<{ [key in string]: string }>
 export type SecureInputStatus = { 
 /**
@@ -1103,6 +1223,11 @@ export type StreamWorkKind = "transcribing" | "polishing"
 export type Theme = "system" | "light" | "dark"
 export type TranscribeAcceleratorSetting = "auto" | "cpu" | "gpu"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
+export type UpdateInfo = { current_version: string; latest_version: string; 
+/**
+ * Every published release newer than the running one, newest first.
+ */
+releases: ReleaseNotes[]; release_url: string; installer_name: string | null; download_size: number | null; install_blocker: InstallBlocker | null }
 export type WindowsInputCompatibilityStatus = { supported: boolean; currentIntegrity: WindowsIntegrityLevel; foregroundIntegrity: WindowsIntegrityLevel | null; foregroundProcessId: number | null; foregroundRequiresElevation: boolean; runningAsAdministrator: boolean; canRestartAsAdministrator: boolean }
 export type WindowsIntegrityLevel = "unsupported" | "unknown" | "untrusted" | "low" | "medium" | "medium_plus" | "high" | "system" | "protected"
 export type WindowsMicrophonePermissionStatus = { supported: boolean; overall_access: PermissionAccess; device_access: PermissionAccess; app_access: PermissionAccess; desktop_app_access: PermissionAccess }

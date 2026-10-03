@@ -121,6 +121,16 @@ const settingUpdaters: {
     commands.changeOverlayPositionSetting(value as string),
   debug_mode: (value) => commands.changeDebugModeSetting(value as boolean),
   custom_words: (value) => commands.updateCustomWords(value as string[]),
+  builtin_dictionary_enabled: (value) =>
+    commands.changeBuiltinDictionarySetting(value as boolean),
+  run_as_administrator: (value) =>
+    commands.changeRunAsAdministratorSetting(value as boolean),
+  numbers_as_digits: (value) =>
+    commands.changeNumbersAsDigitsSetting(value as boolean),
+  update_checks_enabled: (value) =>
+    commands.changeUpdateChecksSetting(value as boolean),
+  secondary_language: (value) =>
+    commands.changeSecondaryLanguageSetting(value as string | null),
   word_correction_threshold: (value) =>
     commands.changeWordCorrectionThresholdSetting(value as number),
   paste_delay_ms: (value) =>

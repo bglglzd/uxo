@@ -9,6 +9,7 @@ import { AppDataDirectory } from "../AppDataDirectory";
 import { AppLanguageSelector } from "../AppLanguageSelector";
 import { ThemeSelector } from "../ThemeSelector";
 import { LogDirectory } from "../debug";
+import { UpdateSettings } from "../../update-checker/UpdateSettings";
 
 export const AboutSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -41,6 +42,7 @@ export const AboutSettings: React.FC = () => {
           {/* eslint-disable-next-line i18next/no-literal-string */}
           <span className="text-sm font-mono">v{version}</span>
         </SettingContainer>
+        <UpdateSettings grouped={true} />
 
         <SettingContainer
           title={t("settings.about.sourceCode.title")}

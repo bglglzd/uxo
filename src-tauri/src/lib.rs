@@ -23,6 +23,7 @@ mod signal_handle;
 mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
+mod updater;
 mod utils;
 mod windows_input;
 
@@ -673,6 +674,11 @@ pub fn run(cli_args: CliArgs) {
             shortcut::delete_post_process_prompt,
             shortcut::set_post_process_selected_prompt,
             shortcut::update_custom_words,
+            shortcut::change_builtin_dictionary_setting,
+            shortcut::change_run_as_administrator_setting,
+            shortcut::change_update_checks_setting,
+            shortcut::change_secondary_language_setting,
+            shortcut::change_numbers_as_digits_setting,
             shortcut::suspend_all_bindings,
             shortcut::resume_all_bindings,
             shortcut::change_mute_while_recording_setting,
@@ -746,6 +752,9 @@ pub fn run(cli_args: CliArgs) {
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,
             helpers::clamshell::is_laptop,
+            updater::check_for_update,
+            updater::download_update,
+            updater::install_update,
         ])
         .events(collect_events![
             managers::history::HistoryUpdatePayload,
@@ -866,6 +875,7 @@ pub fn run(cli_args: CliArgs) {
             Some(vec![]),
         ))
         .manage(cli_args.clone())
+        .manage(updater::UpdaterState::default())
         .setup(move |app| {
             specta_builder.mount_events(app);
 
@@ -952,6 +962,27 @@ pub fn run(cli_args: CliArgs) {
             // honors the runtime `--debug` override applied to `settings` above.
             WEBVIEW_LOG_STREAMING.store(settings.debug_mode, Ordering::Relaxed);
             let app_handle = app.handle().clone();
+
+            // Opt-in "always run as administrator" (Windows): hand over to an
+            // elevated replacement before opening the microphone, hooks or
+            // tray, so text can be pasted into administrator terminals. The
+            // replacement carries --wait-for-pid and is already elevated, so
+            // this cannot loop.
+            if settings.run_as_administrator
+                && cli_args.wait_for_pid.is_none()
+                && !portable::is_portable()
+                && windows_input::relaunch_elevated_if_requested(
+                    &app_handle,
+                    should_hide_main_window(
+                        settings.start_hidden,
+                        settings.onboarding_completed,
+                        cli_args.start_hidden,
+                    ),
+                )
+            {
+                return Ok(());
+            }
+
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
 
             initialize_core_logic(&app_handle);
