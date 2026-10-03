@@ -19,6 +19,7 @@ fn build_match_key(word: &str) -> String {
     word.chars()
         .filter(|c| c.is_alphanumeric())
         .flat_map(|c| c.to_lowercase())
+        .map(|c| if c == 'ё' { 'е' } else { c })
         .collect()
 }
 
@@ -31,10 +32,11 @@ fn build_custom_word_match_keys(word: &str, word_index: usize) -> Vec<CustomWord
     let primary_key = build_match_key(word);
     let mut keys = Vec::with_capacity(2);
 
-    // The fallback matcher is intentionally limited to ASCII terms. Its
-    // whitespace tokenization and Soundex scoring are not suitable for CJK
-    // scripts. Unicode custom words remain available to models that accept
-    // them as native decode prompts; they are simply skipped by this fallback.
+    // The fallback matcher is intentionally limited to Latin (ASCII) and
+    // Cyrillic terms. Its whitespace tokenization is not suitable for CJK
+    // scripts, and Soundex scoring is applied to ASCII letters only. Other
+    // Unicode custom words remain available to models that accept them as
+    // native decode prompts; they are simply skipped by this fallback.
     if is_supported_fuzzy_key(&primary_key) {
         keys.push(CustomWordMatchKey {
             word_index,
@@ -56,7 +58,31 @@ fn build_custom_word_match_keys(word: &str, word_index: usize) -> Vec<CustomWord
 }
 
 fn is_supported_fuzzy_key(key: &str) -> bool {
-    !key.is_empty() && key.chars().all(|c| c.is_ascii_alphanumeric())
+    !key.is_empty()
+        && key
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || is_cyrillic(c))
+}
+
+/// Whether `candidate` is `term` with a different inflectional ending: they
+/// share every character of the term except at most its last one, and the
+/// candidate adds no more than three trailing characters.
+fn is_cyrillic_inflection(candidate: &str, term: &str) -> bool {
+    if !term.chars().any(is_cyrillic) {
+        return false;
+    }
+    let shared = candidate
+        .chars()
+        .zip(term.chars())
+        .take_while(|(a, b)| a == b)
+        .count();
+    let term_len = term.chars().count();
+    let candidate_len = candidate.chars().count();
+    term_len >= 4 && shared + 1 >= term_len && candidate_len - shared <= 3
+}
+
+fn is_cyrillic(c: char) -> bool {
+    matches!(c, '\u{0400}'..='\u{04FF}')
 }
 
 fn supports_soundex(key: &str) -> bool {
@@ -100,6 +126,16 @@ fn find_best_match<'a>(
         let max_allowed_diff = (max_len * 0.25).max(2.0); // At least 2 chars difference allowed
         if len_diff > max_allowed_diff {
             continue;
+        }
+
+        // Russian and other Cyrillic languages inflect nouns ("Кибертрона",
+        // "Анну"). A candidate that only differs from the term by its ending is
+        // the term itself, correctly declined; replacing it would strip the
+        // grammatical case, so leave the word alone entirely.
+        if candidate != custom_word_key.key
+            && is_cyrillic_inflection(candidate, &custom_word_key.key)
+        {
+            return None;
         }
 
         // Calculate Levenshtein distance (normalized by length)
@@ -182,6 +218,17 @@ pub fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -
             if ngram_words[..n.saturating_sub(1)]
                 .iter()
                 .any(|word| !extract_punctuation(word).1.is_empty())
+            {
+                continue;
+            }
+            // Russian one-letter words ("и", "в", "с", "к") are function
+            // words; gluing them onto a neighbour ("и Ковалёву") would let
+            // the fuzzy match swallow them.
+            if n > 1
+                && ngram_words.iter().any(|word| {
+                    let key = build_match_key(word);
+                    key.chars().count() == 1 && key.chars().all(is_cyrillic)
+                })
             {
                 continue;
             }
@@ -285,7 +332,7 @@ pub enum OutputLanguageEvidence {
 }
 
 impl OutputLanguageEvidence {
-    fn language(&self) -> Option<&str> {
+    pub fn language(&self) -> Option<&str> {
         match self {
             Self::UserSelected(language)
             | Self::ModelConstrained(language)
@@ -816,6 +863,25 @@ mod tests {
         let custom_words = vec!["UXO".to_string()];
         let result = apply_custom_words(text, &custom_words, 0.5);
         assert_eq!(result, "「UXO。」");
+    }
+
+    #[test]
+    fn test_apply_custom_words_matches_cyrillic_terms() {
+        let text = "позвони Анатолию Сергеевичу и Ковалёву";
+        let custom_words = vec!["Ковалеву".to_string(), "Анатолию Сергеевичу".to_string()];
+        let result = apply_custom_words(text, &custom_words, 0.18);
+        assert_eq!(result, "позвони Анатолию Сергеевичу и Ковалеву");
+
+        let typo = apply_custom_words("проект Кыбертрон готов", &["Кибертрон".to_string()], 0.18);
+        assert_eq!(typo, "проект Кибертрон готов");
+
+        // Declined forms keep their grammatical ending.
+        let declined = apply_custom_words(
+            "запуск Кибертрона и Кибертрону",
+            &["Кибертрон".to_string()],
+            0.18,
+        );
+        assert_eq!(declined, "запуск Кибертрона и Кибертрону");
     }
 
     #[test]

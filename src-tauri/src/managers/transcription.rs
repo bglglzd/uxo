@@ -1,5 +1,6 @@
 use crate::audio_toolkit::{
-    apply_custom_words, detect_output_language, normalize_transcription_output,
+    apply_custom_words, apply_term_dictionaries, builtin_dictionary, detect_output_language,
+    normalize_transcription_output, numbers_to_digits, parse_custom_vocabulary,
     remove_filler_words, OutputLanguageEvidence,
 };
 use crate::managers::audio::AudioRecordingManager;
@@ -1291,13 +1292,23 @@ impl TranscriptionManager {
                         // whisper run extension to a non-whisper arch is rejected
                         // with INVALID_ARG, so skip it there and let the fuzzy
                         // post-correction handle custom words instead.
-                        let family = if settings.custom_words.is_empty() || !model_is_whisper {
-                            None
-                        } else {
-                            Some(RunExtension::Whisper(WhisperRunOptions {
-                                initial_prompt: Some(settings.custom_words.join(", ")),
-                                ..Default::default()
-                            }))
+                        // `alias → replacement` rules contribute only their
+                        // replacement: the prompt should bias decoding towards
+                        // the written form, not the spoken alias.
+                        let prompt_terms = parse_custom_vocabulary(&settings.custom_words).terms;
+                        let initial_prompt = whisper_initial_prompt(
+                            &validated_language,
+                            settings.secondary_language.as_deref(),
+                            &prompt_terms,
+                        );
+                        let family = match initial_prompt {
+                            Some(prompt) if model_is_whisper => {
+                                Some(RunExtension::Whisper(WhisperRunOptions {
+                                    initial_prompt: Some(prompt),
+                                    ..Default::default()
+                                }))
+                            }
+                            _ => None,
                         };
 
                         let run_plan = transcribe_cpp_run_plan(
@@ -1750,6 +1761,54 @@ fn transcribe_cpp_run_plan(
     }
 }
 
+/// A short sample of `primary`-language speech with common English terms kept
+/// in Latin script. Whisper continues the style of its prompt, so this steers
+/// it away from transliterating ("гитхаб") or translating mixed-in English.
+fn code_switch_prompt(primary: &str, secondary: &str) -> Option<&'static str> {
+    let base = |code: &str| {
+        code.split(['-', '_'])
+            .next()
+            .unwrap_or(code)
+            .to_ascii_lowercase()
+    };
+    if base(secondary) != "en" {
+        return None;
+    }
+    Some(match base(primary).as_str() {
+        "ru" => "Привет! Открой GitHub, проверь pull request и запусти Docker в VS Code. Созвон в Zoom, ссылка в Telegram.",
+        "uk" => "Привіт! Відкрий GitHub, перевір pull request і запусти Docker у VS Code. Дзвінок у Zoom, посилання в Telegram.",
+        "be" => "Прывітанне! Адкрый GitHub, правер pull request і запусці Docker у VS Code. Званок у Zoom, спасылка ў Telegram.",
+        "kk" => "Сәлем! GitHub ашып, pull request тексер және VS Code ішінде Docker іске қос. Қоңырау Zoom арқылы, сілтеме Telegram-да.",
+        "de" => "Hallo! Öffne GitHub, prüf den Pull Request und starte Docker in VS Code. Das Meeting ist in Zoom, der Link steht in Slack.",
+        "fr" => "Salut ! Ouvre GitHub, vérifie la pull request et lance Docker dans VS Code. La réunion est sur Zoom, le lien est dans Slack.",
+        "es" => "¡Hola! Abre GitHub, revisa el pull request y arranca Docker en VS Code. La reunión es en Zoom, el enlace está en Slack.",
+        "it" => "Ciao! Apri GitHub, controlla la pull request e avvia Docker in VS Code. La call è su Zoom, il link è su Slack.",
+        "pt" => "Olá! Abre o GitHub, revê o pull request e inicia o Docker no VS Code. A reunião é no Zoom, o link está no Slack.",
+        "pl" => "Cześć! Otwórz GitHub, sprawdź pull request i uruchom Dockera w VS Code. Spotkanie jest na Zoomie, link na Slacku.",
+        "tr" => "Merhaba! GitHub'ı aç, pull request'i kontrol et ve VS Code'da Docker'ı başlat. Toplantı Zoom'da, link Slack'te.",
+        "nl" => "Hoi! Open GitHub, check de pull request en start Docker in VS Code. De meeting is in Zoom, de link staat in Slack.",
+        _ => return None,
+    })
+}
+
+/// Whisper decode prompt: an optional code-switching sample for the chosen
+/// language pair, followed by the user's custom terms.
+fn whisper_initial_prompt(
+    primary_language: &str,
+    secondary_language: Option<&str>,
+    custom_terms: &[String],
+) -> Option<String> {
+    let sample = secondary_language
+        .filter(|secondary| primary_language != "auto" && *secondary != primary_language)
+        .and_then(|secondary| code_switch_prompt(primary_language, secondary));
+    let terms = (!custom_terms.is_empty()).then(|| custom_terms.join(", "));
+    match (sample, terms) {
+        (Some(sample), Some(terms)) => Some(format!("{sample} {terms}")),
+        (Some(sample), None) => Some(sample.to_string()),
+        (None, terms) => terms,
+    }
+}
+
 fn post_process_transcription_text(
     raw: String,
     settings: &AppSettings,
@@ -1758,12 +1817,23 @@ fn post_process_transcription_text(
     supported_languages: &[String],
 ) -> String {
     fail_open_text_transform(raw, |raw| {
-        let corrected = if !settings.custom_words.is_empty() && !custom_words_already_prompted {
-            apply_custom_words(
-                &raw,
-                &settings.custom_words,
-                settings.word_correction_threshold,
-            )
+        let vocabulary = parse_custom_vocabulary(&settings.custom_words);
+
+        // Exact dictionary rules always run, even when the words were already
+        // given to the model as a decode prompt: a prompt biases decoding but
+        // cannot turn a transliterated "телеграм" into "Telegram". User rules
+        // come first so they override the built-in list.
+        let mut dictionaries = Vec::with_capacity(2);
+        if !vocabulary.rules.is_empty() {
+            dictionaries.push(&vocabulary.rules);
+        }
+        if settings.builtin_dictionary_enabled {
+            dictionaries.push(builtin_dictionary());
+        }
+        let raw = apply_term_dictionaries(&raw, &dictionaries);
+
+        let corrected = if !vocabulary.terms.is_empty() && !custom_words_already_prompted {
+            apply_custom_words(&raw, &vocabulary.terms, settings.word_correction_threshold)
         } else {
             raw
         };
@@ -1794,7 +1864,12 @@ fn post_process_transcription_text(
             settings.filler_word_removal_enabled,
         );
 
-        normalize_transcription_output(&without_fillers)
+        let normalized = normalize_transcription_output(&without_fillers);
+        if settings.numbers_as_digits {
+            numbers_to_digits(&normalized, output_language.language())
+        } else {
+            normalized
+        }
     })
 }
 
@@ -2199,6 +2274,85 @@ mod tests {
             panic!("simulated optional cleanup failure")
         });
 
+        assert_eq!(result, raw);
+    }
+
+    #[test]
+    fn whisper_prompt_combines_code_switch_sample_and_terms() {
+        let terms = vec!["UXO".to_string()];
+        let prompt = whisper_initial_prompt("ru", Some("en"), &terms).unwrap();
+        assert!(prompt.starts_with("Привет!"));
+        assert!(prompt.ends_with(" UXO"));
+
+        assert_eq!(
+            whisper_initial_prompt("ru", None, &terms).as_deref(),
+            Some("UXO")
+        );
+        // Auto-detect has no primary language to anchor the sample to.
+        assert_eq!(whisper_initial_prompt("auto", Some("en"), &[]), None);
+        assert_eq!(whisper_initial_prompt("en", Some("en"), &[]), None);
+        assert!(whisper_initial_prompt("ru-RU", Some("en"), &[]).is_some());
+    }
+
+    #[test]
+    fn dictionary_runs_even_when_custom_words_were_prompted() {
+        let settings = AppSettings {
+            selected_language: "ru".to_string(),
+            custom_words: vec!["ю икс о → UXO".to_string()],
+            ..Default::default()
+        };
+        let result = post_process_transcription_text(
+            "открой ю икс о и гитхаб".to_string(),
+            &settings,
+            true,
+            &OutputLanguageEvidence::UserSelected("ru".to_string()),
+            &languages(&["ru", "en"]),
+        );
+        assert_eq!(result, "открой UXO и GitHub");
+
+        let disabled = AppSettings {
+            builtin_dictionary_enabled: false,
+            ..settings
+        };
+        let result = post_process_transcription_text(
+            "открой гитхаб".to_string(),
+            &disabled,
+            true,
+            &OutputLanguageEvidence::UserSelected("ru".to_string()),
+            &languages(&["ru", "en"]),
+        );
+        assert_eq!(result, "открой гитхаб");
+    }
+
+    #[test]
+    fn spelled_out_numbers_follow_the_setting() {
+        let settings = AppSettings {
+            selected_language: "ru".to_string(),
+            ..Default::default()
+        };
+        let evidence = OutputLanguageEvidence::UserSelected("ru".to_string());
+        let raw = "встреча двадцать пятого марта".to_string();
+
+        let result = post_process_transcription_text(
+            raw.clone(),
+            &settings,
+            false,
+            &evidence,
+            &languages(&["ru"]),
+        );
+        assert_eq!(result, "встреча 25 марта");
+
+        let words = AppSettings {
+            numbers_as_digits: false,
+            ..settings
+        };
+        let result = post_process_transcription_text(
+            raw.clone(),
+            &words,
+            false,
+            &evidence,
+            &languages(&["ru"]),
+        );
         assert_eq!(result, raw);
     }
 

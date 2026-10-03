@@ -4,8 +4,9 @@
 //! process from observing low-level input in, or injecting `SendInput` into, a
 //! process at a higher integrity level. UXO deliberately remains a normal
 //! per-user application. When a user explicitly opts in, `runas` starts a new
-//! administrator instance for the rest of the current session only; no
-//! manifest, autostart entry, or persistent elevation setting is changed.
+//! administrator instance. That is session-only by default; with the opt-in
+//! `run_as_administrator` setting UXO requests the same restart (and its UAC
+//! prompt) on every launch. No manifest or autostart entry is changed.
 
 use serde::Serialize;
 use specta::Type;
@@ -282,7 +283,10 @@ mod platform {
             .unwrap_or(false))
     }
 
-    pub(super) fn restart_as_administrator(app: &AppHandle) -> Result<(), String> {
+    pub(super) fn restart_as_administrator(
+        app: &AppHandle,
+        start_hidden: bool,
+    ) -> Result<(), String> {
         if crate::portable::is_portable() {
             return Err("Administrator restart is disabled for portable installations".to_string());
         }
@@ -301,7 +305,10 @@ mod platform {
         let executable = std::env::current_exe()
             .map_err(|error| format!("Failed to locate the UXO executable: {error}"))?;
         let directory = executable.parent().unwrap_or_else(|| Path::new("."));
-        let parameters = format!("--wait-for-pid {} --start-hidden", std::process::id());
+        let mut parameters = format!("--wait-for-pid {}", std::process::id());
+        if start_hidden {
+            parameters.push_str(" --start-hidden");
+        }
         let verb = wide("runas");
         let executable = wide(executable.as_os_str());
         let parameters = wide(parameters);
@@ -388,12 +395,44 @@ pub fn get_windows_input_compatibility_status() -> Result<WindowsInputCompatibil
 pub fn restart_as_administrator(app: AppHandle) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        platform::restart_as_administrator(&app)
+        platform::restart_as_administrator(&app, true)
     }
     #[cfg(not(target_os = "windows"))]
     {
         let _ = app;
         Err("Administrator restart is only available on Windows".into())
+    }
+}
+
+/// Startup half of the `run_as_administrator` setting: when this instance is
+/// not elevated, launch an elevated replacement through UAC. Returns `true`
+/// when the replacement was launched and this instance is exiting. A declined
+/// UAC prompt (or any other failure) keeps the current instance running.
+pub(crate) fn relaunch_elevated_if_requested(app: &AppHandle, start_hidden: bool) -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        match platform::current_process_is_elevated() {
+            Ok(true) => return false,
+            Ok(false) => {}
+            Err(error) => {
+                log::warn!("Could not read UXO's integrity level; staying unelevated: {error}");
+                return false;
+            }
+        }
+        match platform::restart_as_administrator(app, start_hidden) {
+            Ok(()) => true,
+            Err(error) => {
+                log::warn!(
+                    "Administrator launch was not completed; continuing unelevated: {error}"
+                );
+                false
+            }
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = (app, start_hidden);
+        false
     }
 }
 
