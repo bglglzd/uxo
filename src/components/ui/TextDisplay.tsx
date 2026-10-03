@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { SettingContainer } from "./SettingContainer";
 
 interface TextDisplayProps {
@@ -19,11 +20,12 @@ export const TextDisplay: React.FC<TextDisplayProps> = ({
   value,
   descriptionMode = "tooltip",
   grouped = false,
-  placeholder = "Not available",
+  placeholder,
   copyable = false,
   monospace = false,
   onCopy,
 }) => {
+  const { t } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -41,7 +43,7 @@ export const TextDisplay: React.FC<TextDisplayProps> = ({
     }
   };
 
-  const displayValue = value || placeholder;
+  const displayValue = value || placeholder || t("common.notAvailable");
   const textClasses = monospace ? "font-mono break-all" : "break-words";
 
   return (
@@ -63,8 +65,9 @@ export const TextDisplay: React.FC<TextDisplayProps> = ({
         {copyable && value && (
           <button
             onClick={handleCopy}
-            className="flex min-h-9 w-12 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border bg-surface-raised px-2 py-1 text-xs font-medium text-text shadow-sm transition-all duration-200 hover:border-logo-primary/55 hover:bg-logo-primary/10 hover:text-logo-primary focus:outline-none"
-            title="Copy to clipboard"
+            className="flex min-h-9 min-w-12 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border bg-surface-raised px-2 py-1 text-xs font-medium text-text shadow-sm transition-all duration-200 hover:border-logo-primary/55 hover:bg-logo-primary/10 hover:text-logo-primary focus:outline-none"
+            title={t("common.copyToClipboard")}
+            aria-label={t("common.copyToClipboard")}
           >
             {showCopied ? (
               <div className="flex items-center space-x-1">
@@ -83,7 +86,7 @@ export const TextDisplay: React.FC<TextDisplayProps> = ({
                 </svg>
               </div>
             ) : (
-              "Copy"
+              t("common.copy")
             )}
           </button>
         )}

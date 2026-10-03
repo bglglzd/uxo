@@ -7,6 +7,9 @@
   --color-background: var(--color-background);
   --color-surface: var(--color-surface);
   --color-surface-raised: var(--color-surface-raised);
+  --color-surface-glass: var(--color-surface-glass);
+  --color-on-accent: var(--color-on-accent);
+  --color-shadow: var(--color-shadow);
   --color-background-ui: var(--color-background-ui);
   --color-logo-primary: var(--color-logo-primary);
   --color-logo-stroke: var(--color-logo-stroke);

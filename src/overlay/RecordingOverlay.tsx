@@ -185,8 +185,9 @@ const RecordingOverlay: React.FC = () => {
 
   const cancelBtn = (
     <button
+      type="button"
       className="sx"
-      aria-label="cancel"
+      aria-label={t("overlay.cancel")}
       onClick={() => commands.cancelOperation()}
     >
       <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -222,7 +223,9 @@ const RecordingOverlay: React.FC = () => {
       <div className="sbase-l">
         <span className="sspinner" />
       </div>
-      <span className="swork-label">{label}</span>
+      <span className="swork-label" role="status" aria-live="polite">
+        {label}
+      </span>
       <div className="sbase-r">{showCancel && cancelBtn}</div>
     </div>
   );

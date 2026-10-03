@@ -32,8 +32,9 @@
      (no theme equivalent). */
   --light-s-muted: #6e6e6e;
   --dark-s-muted: #a3a09a;
-  --light-s-faint: #9a9a9a;
-  --dark-s-faint: #6f6c66;
+  /* The timer uses the app mid-gray so small text keeps AA contrast. */
+  --light-s-faint: var(--light-color-mid-gray);
+  --dark-s-faint: var(--dark-color-mid-gray);
   /* Hairlines reuse the app's mid-gray at low opacity in light — same vocabulary
      as the app's border-mid-gray/* utilities — and flip to the near-white text
      token for contrast on dark. */
@@ -280,7 +281,7 @@
   width: 2px;
   height: 1.02em;
   translate: 0 3px;
-  margin-left: 1px;
+  margin-inline-start: 1px;
   background: var(--s-recording);
   border-radius: 2px;
   animation: scaret-blink 1.05s steps(1) infinite;
@@ -411,6 +412,7 @@
   }
 }
 .sx {
+  position: relative;
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -429,6 +431,13 @@
     background-color 150ms ease,
     color 150ms ease,
     transform 100ms ease;
+}
+/* Expand the hit target to 30px without changing the compact pill layout. */
+.sx::before {
+  position: absolute;
+  inset: -4px;
+  content: "";
+  border-radius: 50%;
 }
 .sx svg {
   width: 9px;
@@ -485,6 +494,8 @@
   .stimer,
   .sdot,
   .swave i,
+  .sspinner,
+  .scaret,
   .sx {
     animation: none !important;
     transition-duration: 1ms !important;
