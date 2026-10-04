@@ -52,19 +52,29 @@ jobs:
         with:
           script: |
             const tag = `v${process.env.VERSION}`;
-            try {
-              const { data: existing } = await github.rest.repos.getReleaseByTag({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag,
-              });
+            // getReleaseByTag only resolves published releases, never drafts,
+            // so look the tag up in the full release list instead.
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+            const matching = releases.filter((release) => release.tag_name === tag);
+            if (matching.length > 1) {
+              core.setFailed(
+                `Found ${matching.length} releases for ${tag} (${matching.map((r) => r.id).join(', ')}); delete the extra drafts first.`,
+              );
+              return;
+            }
+            const existing = matching[0];
+            if (existing) {
               if (!existing.draft || !existing.prerelease) {
                 core.setFailed(`A non-draft or non-prerelease release for ${tag} already exists.`);
                 return;
               }
               if (existing.target_commitish !== context.sha) {
                 core.setFailed(
-                  `Existing ${tag} draft targets ${existing.target_commitish}, not this workflow commit ${context.sha}.`,
+                  `Existing ${tag} draft targets ${existing.target_commitish}, not this workflow commit ${context.sha}. Delete the draft and run again.`,
                 );
                 return;
               }
@@ -82,8 +92,6 @@ jobs:
               core.info(`Reusing existing draft prerelease ${existing.id} for ${tag}.`);
               core.setOutput('release-id', String(existing.id));
               return;
-            } catch (error) {
-              if (error.status !== 404) throw error;
             }
 
             try {
