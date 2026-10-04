@@ -265,7 +265,7 @@ finally {
 }
 ```
 
-The default `unbundled` mode writes the executable and required app-local DLLs to `src-tauri/target/release/`. Set `$buildMode = 'dev'` for `tauri dev`, or `$buildMode = 'installer'` for an unsigned installer. Code signing and a production update channel are not configured yet, so publish these bundles only as clearly labeled Preview assets after completing the package, dependency, and checksum audits below.
+The default `unbundled` mode writes the executable and required app-local DLLs to `src-tauri/target/release/`. Set `$buildMode = 'dev'` for `tauri dev`, or `$buildMode = 'installer'` for an unsigned installer. Code signing is not configured yet. Public releases are built and published by the automated Release workflow (see CONTRIBUTING.md), which runs the same package, dependency, and checksum audits; publish locally built bundles only as clearly labeled Preview assets.
 
 With a custom `CARGO_TARGET_DIR`, the recipe cannot infer every possible target/profile layout. Copy the DLLs from `src-tauri/transcribe-libs/` beside the generated `uxo.exe`, then run the same `dumpbin /dependents` audit against that executable before treating the directory as self-contained.
 

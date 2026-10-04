@@ -214,4 +214,4 @@ See the [Troubleshooting](README.md#troubleshooting) section in README.md.
 - **Translations:** Follow [CONTRIBUTING_TRANSLATIONS.md](CONTRIBUTING_TRANSLATIONS.md).
 - **Full contributor workflow:** [CONTRIBUTING.md](CONTRIBUTING.md).
 
-**Commits:** Use conventional commit prefixes (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`). Focus the message on _why_, not _what_.
+**Commits:** Use conventional commit prefixes (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`). Focus the message on _why_, not _what_. The prefix drives releases: a merge to `main` containing `feat`/`fix`/`perf` publishes a new version automatically (see "Releases" in [CONTRIBUTING.md](CONTRIBUTING.md)), so do not bump versions by hand.

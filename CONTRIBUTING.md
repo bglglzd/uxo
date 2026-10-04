@@ -37,6 +37,17 @@ Native Windows commands need the environment described in [BUILD.md](BUILD.md).
 
 Read and complete [the pull-request template](.github/PULL_REQUEST_TEMPLATE.md). Its Human Written Description and AI Assistance sections are required. Include concrete test evidence and screenshots for visible changes.
 
+## Releases
+
+Releases are automatic. When a merge to `main` contains a `feat:`, `fix:` or `perf:` commit since the last `v*` tag, the [Release workflow](.github/workflows/release.yml):
+
+1. picks the next version: `feat`/`fix`/`perf` bump the patch version, and a breaking change (`feat!:` or a `BREAKING CHANGE:` footer) bumps the minor version while UXO is below 1.0;
+2. writes it into `package.json`, `tauri.conf.json`, `Cargo.toml`/`Cargo.lock` and the README download links, then pushes a `chore(release): vX.Y.Z` commit;
+3. builds the Windows installers and `SHA256SUMS.txt` from that commit;
+4. tags it and publishes the GitHub release, which the in-app updater then offers.
+
+`docs`, `chore`, `ci`, `test`, `refactor`, `style` and `build` commits do not release on their own. Release notes are generated from the commit subjects; to write them yourself, add `docs/releases/vX.Y.Z.md` in the PR that triggers the release. To force a release or a specific bump, run the workflow manually from the Actions tab.
+
 ## Project links
 
 Report UXO bugs and propose UXO changes through the [UXO repository](https://github.com/bglglzd/uxo). Third-party attribution and dependency licenses are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

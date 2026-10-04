@@ -1,137 +1,157 @@
-name: Prepare Windows preview release
+name: Release
+
+# Every push to main that contains a feat, fix or perf commit (or a breaking
+# change) since the last v* tag is released automatically:
+#   1. plan    – pick the next version from the conventional commits,
+#                stamp it into the manifests and push "chore(release): vX";
+#   2. package – build the Windows installers and SHA256SUMS.txt from that
+#                exact commit;
+#   3. publish – verify the checksums, tag the commit and publish the release.
+# The in-app updater picks the release up from there. docs/releases/vX.md is
+# used as the release notes when present; otherwise they are generated from
+# the commit subjects. Run manually to force a release or a specific bump.
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
-      prepare_unsigned_preview:
-        description: Create an unsigned, draft prerelease from the version in source files
-        required: true
-        default: false
-        type: boolean
+      bump:
+        description: Version bump ("auto" follows the conventional commits since the last release)
+        type: choice
+        options: [auto, patch, minor, major]
+        default: auto
 
+# Releases are serialized; a queued run starts from the latest main, so it
+# also covers anything merged while the previous release was building.
 concurrency:
-  group: prepare-preview-release
+  group: release
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
-  prepare-release:
-    if: inputs.prepare_unsigned_preview
-    name: Create draft prerelease
+  plan:
+    name: Plan release
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
     outputs:
-      release-id: ${{ steps.create.outputs.release-id }}
-      version: ${{ steps.version.outputs.version }}
+      release: ${{ steps.plan.outputs.release }}
+      version: ${{ steps.plan.outputs.version }}
+      sha: ${{ steps.commit.outputs.sha }}
 
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
-          persist-credentials: false
+          ref: main
+          fetch-depth: 0
 
-      - name: Verify release version metadata
-        id: version
-        shell: bash
+      - name: Decide the next version
+        id: plan
+        env:
+          BUMP: ${{ inputs.bump || 'auto' }}
+        run: python3 scripts/ci/release.py plan --bump "$BUMP"
+
+      - name: Refuse an existing tag
+        if: steps.plan.outputs.release == 'true'
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
         run: |
-          set -euo pipefail
-          tauri_version="$(jq -r '.version' src-tauri/tauri.conf.json)"
-          package_version="$(jq -r '.version' package.json)"
-          cargo_version="$(sed -nE 's/^version[[:space:]]*=[[:space:]]*"([^"]+)"/\1/p' src-tauri/Cargo.toml | head -1)"
-          if [[ -z "$tauri_version" || "$tauri_version" != "$package_version" || "$tauri_version" != "$cargo_version" ]]; then
-            echo "Version mismatch: tauri=$tauri_version package=$package_version cargo=$cargo_version" >&2
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null; then
+            echo "::error::Tag v$VERSION already exists."
             exit 1
           fi
-          echo "version=$tauri_version" >> "$GITHUB_OUTPUT"
 
-      - name: Create unsigned preview draft
-        id: create
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+      - name: Stamp the version and push the release commit
+        id: commit
+        if: steps.plan.outputs.release == 'true'
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ steps.plan.outputs.version }}
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/release.py stamp "$VERSION"
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -am "chore(release): v$VERSION"
+            git push origin HEAD:main
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Keep the release notes for the publish job
+        if: steps.plan.outputs.release == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          script: |
-            const tag = `v${process.env.VERSION}`;
-            // getReleaseByTag only resolves published releases, never drafts,
-            // so look the tag up in the full release list instead.
-            const releases = await github.paginate(github.rest.repos.listReleases, {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              per_page: 100,
-            });
-            const matching = releases.filter((release) => release.tag_name === tag);
-            if (matching.length > 1) {
-              core.setFailed(
-                `Found ${matching.length} releases for ${tag} (${matching.map((r) => r.id).join(', ')}); delete the extra drafts first.`,
-              );
-              return;
-            }
-            const existing = matching[0];
-            if (existing) {
-              if (!existing.draft || !existing.prerelease) {
-                core.setFailed(`A non-draft or non-prerelease release for ${tag} already exists.`);
-                return;
-              }
-              if (existing.target_commitish !== context.sha) {
-                core.setFailed(
-                  `Existing ${tag} draft targets ${existing.target_commitish}, not this workflow commit ${context.sha}. Delete the draft and run again.`,
-                );
-                return;
-              }
-              try {
-                await github.rest.git.getRef({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  ref: `tags/${tag}`,
-                });
-                core.setFailed(`The tag ${tag} already exists; refusing to reuse its draft.`);
-                return;
-              } catch (error) {
-                if (error.status !== 404) throw error;
-              }
-              core.info(`Reusing existing draft prerelease ${existing.id} for ${tag}.`);
-              core.setOutput('release-id', String(existing.id));
-              return;
-            }
-
-            try {
-              await github.rest.git.getRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: `tags/${tag}`,
-              });
-              core.setFailed(`The tag ${tag} already exists.`);
-              return;
-            } catch (error) {
-              if (error.status !== 404) throw error;
-            }
-
-            const { data: release } = await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: tag,
-              target_commitish: context.sha,
-              name: `UXO ${tag} Preview`,
-              body: [
-                '> [!WARNING]',
-                '> This workflow creates **unsigned Windows x64 preview** installers.',
-                '> Review the generated installers, smoke-test them, and verify `SHA256SUMS.txt` before publishing this draft.',
-                '',
-                'The release remains a draft until a maintainer publishes it manually.',
-              ].join('\n'),
-              draft: true,
-              prerelease: true,
-              make_latest: 'false',
-            });
-            core.setOutput('release-id', String(release.id));
+          name: release-notes
+          path: release-notes.md
+          if-no-files-found: error
+          retention-days: 7
 
   package:
-    needs: prepare-release
+    needs: plan
+    if: needs.plan.outputs.release == 'true'
     permissions:
       contents: write
     uses: ./.github/workflows/build.yml
     with:
-      ref: ${{ github.sha }}
-      release-id: ${{ needs.prepare-release.outputs.release-id }}
+      ref: ${{ needs.plan.outputs.sha }}
       upload-artifacts: true
       no-cache: true
+
+  publish:
+    name: Publish release
+    needs: [plan, package]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      VERSION: ${{ needs.plan.outputs.version }}
+      SHA: ${{ needs.plan.outputs.sha }}
+
+    steps:
+      - name: Download installers and notes
+        run: |
+          set -euo pipefail
+          # Artifacts of this run, fetched through the REST API (available as
+          # soon as each upload finishes, while the run is still in progress).
+          fetch_artifact() {
+            local id
+            id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
+              --jq ".artifacts[] | select(.name == \"$1\") | .id" | head -n1)
+            test -n "$id" || { echo "::error::Artifact $1 not found"; exit 1; }
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" > "$1.zip"
+            mkdir -p "$2"
+            unzip -q "$1.zip" -d "$2"
+          }
+          fetch_artifact uxo-windows-x64-unsigned bundle
+          fetch_artifact release-notes notes
+          mkdir dist
+          find bundle -type f \( -name '*.exe' -o -name '*.msi' -o -name 'SHA256SUMS.txt' \) -exec cp {} dist/ \;
+          ls -l dist
+
+      - name: Verify assets and checksums
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          for asset in "UXO_${VERSION}_x64-setup.exe" "UXO_${VERSION}_x64_en-US.msi" SHA256SUMS.txt; do
+            test -f "$asset" || { echo "::error::Missing $asset"; exit 1; }
+          done
+          test "$(ls | wc -l)" -eq 3 || { echo "::error::Unexpected files: $(ls)"; exit 1; }
+          sha256sum --check --strict SHA256SUMS.txt
+
+      - name: Tag and publish
+        run: |
+          set -euo pipefail
+          gh release create "v$VERSION" dist/* \
+            -R "$GITHUB_REPOSITORY" \
+            --target "$SHA" \
+            --title "UXO v$VERSION" \
+            --notes-file notes/release-notes.md \
+            --latest
+          echo "Published https://github.com/$GITHUB_REPOSITORY/releases/tag/v$VERSION" >> "$GITHUB_STEP_SUMMARY"
