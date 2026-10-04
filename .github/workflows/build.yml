@@ -303,9 +303,13 @@ jobs:
           if ($release.target_commitish -ne $env:EXPECTED_TARGET) {
             throw "Release ID $expectedId targets $($release.target_commitish), not $env:EXPECTED_TARGET."
           }
-          $tagRelease = gh api "repos/$repository/releases/tags/$tag" | ConvertFrom-Json
-          if ($LASTEXITCODE -ne 0 -or [string]$tagRelease.id -ne $expectedId) {
-            throw "The $tag release no longer resolves to expected release ID $expectedId."
+          # /releases/tags/{tag} only resolves published releases, never
+          # drafts, so list every release and require exactly one for $tag.
+          $env:RELEASE_TAG = $tag
+          $tagReleaseIds = @(gh api --paginate "repos/$repository/releases?per_page=100" --jq '.[] | select(.tag_name == env.RELEASE_TAG) | .id')
+          if ($LASTEXITCODE -ne 0) { throw "Could not list releases for $tag." }
+          if ($tagReleaseIds.Count -ne 1 -or [string]$tagReleaseIds[0] -ne $expectedId) {
+            throw "The $tag release no longer resolves to expected release ID $expectedId (found: $($tagReleaseIds -join ', '))."
           }
           $tagProbe = gh api "repos/$repository/git/ref/tags/$tag" --silent 2>&1
           if ($LASTEXITCODE -eq 0) {
