@@ -31,12 +31,13 @@ static MIGRATIONS: &[&str] = &[
 ];
 
 fn apply_history_migrations(conn: &mut Connection) -> Result<()> {
-    let current: usize = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
-    if current > MIGRATIONS.len() {
+    let current: i32 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
+    if current < 0 || current as usize > MIGRATIONS.len() {
         return Err(anyhow!(
             "History schema version {current} is newer than this app supports"
         ));
     }
+    let current = current as usize;
     if current == MIGRATIONS.len() {
         return Ok(());
     }
@@ -45,7 +46,7 @@ fn apply_history_migrations(conn: &mut Connection) -> Result<()> {
     for sql in &MIGRATIONS[current..] {
         transaction.execute_batch(sql)?;
     }
-    transaction.pragma_update(None, "user_version", MIGRATIONS.len())?;
+    transaction.pragma_update(None, "user_version", MIGRATIONS.len() as i32)?;
     transaction.commit()?;
     Ok(())
 }
@@ -674,7 +675,7 @@ mod tests {
         for sql in &MIGRATIONS[..version] {
             conn.execute_batch(sql).expect("create legacy schema");
         }
-        conn.pragma_update(None, "user_version", version)
+        conn.pragma_update(None, "user_version", version as i32)
             .expect("set legacy version");
         if version > 0 {
             conn.execute(
@@ -693,10 +694,10 @@ mod tests {
             let mut conn = legacy_conn(version);
             apply_history_migrations(&mut conn).expect("upgrade legacy history");
             apply_history_migrations(&mut conn).expect("reopening is idempotent");
-            let current: usize = conn
+            let current: i32 = conn
                 .pragma_query_value(None, "user_version", |row| row.get(0))
                 .unwrap();
-            assert_eq!(current, MIGRATIONS.len());
+            assert_eq!(current, MIGRATIONS.len() as i32);
             let entry = HistoryManager::get_latest_entry_with_conn(&conn).unwrap();
             if version == 0 {
                 assert!(entry.is_none());
@@ -717,7 +718,7 @@ mod tests {
                 .unwrap();
             conn.execute(
                 "INSERT INTO _sqlx_migrations VALUES (?1, 1), (?2, 0)",
-                params![version, version + 1],
+                params![version as i32, (version + 1) as i32],
             )
             .unwrap();
             HistoryManager::migrate_from_tauri_plugin_sql(&conn).unwrap();
@@ -735,10 +736,10 @@ mod tests {
     #[test]
     fn newer_history_schema_is_refused_without_changing_data() {
         let mut conn = legacy_conn(MIGRATIONS.len());
-        let newer = MIGRATIONS.len() + 1;
+        let newer = MIGRATIONS.len() as i32 + 1;
         conn.pragma_update(None, "user_version", newer).unwrap();
         assert!(apply_history_migrations(&mut conn).is_err());
-        let current: usize = conn
+        let current: i32 = conn
             .pragma_query_value(None, "user_version", |row| row.get(0))
             .unwrap();
         assert_eq!(current, newer);
@@ -759,7 +760,7 @@ mod tests {
         )
         .unwrap();
         assert!(apply_history_migrations(&mut conn).is_err());
-        let current: usize = conn
+        let current: i32 = conn
             .pragma_query_value(None, "user_version", |row| row.get(0))
             .unwrap();
         assert_eq!(current, 1);
