@@ -206,9 +206,9 @@ See the [Troubleshooting](README.md#troubleshooting) section in README.md.
 
 ## Contribution workflow for AI coding assistants
 
-**MANDATORY. Before opening any PR or issue in this repo: read the relevant template file and follow it strictly.** That includes checklists, AI Assistance disclosures, and the "Human Written Description" section. A generic Summary/Test-plan layout is not acceptable.
+**MANDATORY. Before opening any PR or issue in this repo: read the relevant template file and follow it strictly.** That includes checklists, AI Assistance disclosures, and the Description section. A generic Summary/Test-plan layout is not acceptable.
 
-- **Opening a PR:** Read [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md). Every section listed there is mandatory. If a section requires a human-written paragraph (e.g. "Human Written Description"), leave a clear TODO placeholder and ask the human contributor to fill it in — do not invent their voice.
+- **Opening a PR:** Read [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md). Complete every section. Write a concise, direct English description in the maintainer's voice: what was observed, why it matters, and what the change does. AI-assisted descriptions are allowed; disclose the tools and scope in AI Assistance. Use verified facts and actual test results. Do not invent personal experiences or human verification. Ask the maintainer only when a missing fact prevents an accurate description, not merely because AI helped write it.
 - **Opening an issue:** Read [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/) and use the appropriate template.
 - **UXO tracker:** Open issues and pull requests only in the UXO repository unless the user explicitly names another project.
 - **Translations:** Follow [CONTRIBUTING_TRANSLATIONS.md](CONTRIBUTING_TRANSLATIONS.md).

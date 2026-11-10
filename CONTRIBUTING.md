@@ -35,7 +35,7 @@ Native Windows commands need the environment described in [BUILD.md](BUILD.md).
 
 ## Pull requests
 
-Read and complete [the pull-request template](.github/PULL_REQUEST_TEMPLATE.md). Its Human Written Description and AI Assistance sections are required. Include concrete test evidence and screenshots for visible changes.
+Read and complete [the pull-request template](.github/PULL_REQUEST_TEMPLATE.md). Its Description and AI Assistance sections are required. Write a concise English description of the observed problem, its impact, and the change. AI-assisted drafting is allowed when disclosed; keep verification claims factual. Include concrete test evidence and screenshots for visible changes.
 
 ## Releases
 
