@@ -63,3 +63,6 @@ result
 
 # Python bytecode (scripts/)
 __pycache__/
+
+# Local coding-agent instructions
+AGENTS.md

@@ -1,7 +1,7 @@
 ## Before Submitting
 
 - [ ] This pull request contains one focused change.
-- [ ] I ran the relevant checks from `AGENTS.md` and `BUILD.md`.
+- [ ] I ran the relevant checks from `CONTRIBUTING.md` and `BUILD.md`.
 - [ ] I did not add network transmission to the default local transcription path.
 - [ ] User-facing text uses i18next translations.
 

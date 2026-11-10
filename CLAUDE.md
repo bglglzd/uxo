@@ -1,1 +1,1 @@
-Read @AGENTS.md
+Read @CONTRIBUTING.md and @BUILD.md.
