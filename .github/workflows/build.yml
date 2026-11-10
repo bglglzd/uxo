@@ -232,9 +232,19 @@ jobs:
           function Assert-InstalledPackage([string]$Root, [string]$Label) {
             $installedExe = Get-ChildItem -LiteralPath $Root -Recurse -File -Filter 'uxo.exe' | Select-Object -First 1
             if (-not $installedExe) { throw "$Label package is missing uxo.exe" }
-            # MSI is administratively extracted; opt that disposable directory
-            # into supported portable mode so all test data stays under it.
-            [IO.File]::WriteAllText((Join-Path $installedExe.DirectoryName 'portable'), 'UXO Portable Mode')
+            $portableMarker = Join-Path $installedExe.DirectoryName 'portable'
+            if ($Label -eq 'NSIS') {
+              if (-not (Test-Path -LiteralPath $portableMarker) -or
+                  (Get-Content -LiteralPath $portableMarker -Raw) -ne 'UXO Portable Mode' -or
+                  -not (Test-Path -LiteralPath (Join-Path $installedExe.DirectoryName 'Data')) -or
+                  (Test-Path -LiteralPath (Join-Path $installedExe.DirectoryName 'uninstall.exe'))) {
+                throw 'NSIS did not create a self-contained portable installation.'
+              }
+            } else {
+              # MSI is administratively extracted; opt only that disposable
+              # directory into supported portable mode to isolate test data.
+              [IO.File]::WriteAllText($portableMarker, 'UXO Portable Mode')
+            }
             $modelsRoot = Join-Path $installedExe.DirectoryName 'Data/models'
             New-Item -ItemType Directory -Path $modelsRoot -Force | Out-Null
             Copy-Item -LiteralPath $asrModel -Destination (Join-Path $modelsRoot 'ggml-tiny.en.bin')
