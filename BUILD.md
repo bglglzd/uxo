@@ -8,6 +8,7 @@ Install:
 
 - latest stable [Rust](https://rustup.rs/);
 - [Bun](https://bun.sh/);
+- [Node.js](https://nodejs.org/) 24 for ESLint 10 (20.19+ and 22.13+ are also supported);
 - the platform prerequisites for [Tauri 2](https://v2.tauri.app/start/prerequisites/).
 
 From the repository root, install JavaScript dependencies. The development VAD model is tracked at `src-tauri/resources/models/silero_vad_v4.onnx`:

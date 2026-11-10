@@ -29,25 +29,38 @@ const nixDir = join(root, ".nix");
 const lockFile = join(root, "bun.lock");
 const hashFile = join(nixDir, "bun-lock-hash");
 const nixFile = join(nixDir, "bun.nix");
+const checkOnly = process.argv.includes("--check");
 
-// Skip on Windows — bun2nix is Nix-only and hangs on Windows CI
-if (process.platform === "win32") process.exit(0);
+// Regeneration stays on Unix; read-only validation also runs on Windows.
+if (process.platform === "win32" && !checkOnly) process.exit(0);
 
 // No bun.lock — nothing to do
-if (!existsSync(lockFile)) process.exit(0);
+if (!existsSync(lockFile)) {
+  if (checkOnly) throw new Error("bun.lock is missing");
+  process.exit(0);
+}
 
 // Ensure .nix directory exists
-mkdirSync(nixDir, { recursive: true });
+if (!checkOnly) mkdirSync(nixDir, { recursive: true });
 
 // Compute sha256 of the current bun.lock
 const currentHash = new Bun.CryptoHasher("sha256")
-  .update(readFileSync(lockFile))
+  .update(readFileSync(lockFile, "utf-8").replace(/\r\n/g, "\n"))
   .digest("hex");
 
 // Read the previously stored hash (empty if first run)
 const storedHash = existsSync(hashFile)
   ? readFileSync(hashFile, "utf-8").trim()
   : "";
+
+if (checkOnly) {
+  if (currentHash !== storedHash || !existsSync(nixFile)) {
+    throw new Error(
+      "Nix dependencies are stale. Regenerate with bun scripts/check-nix-deps.ts on Unix and commit .nix/bun.nix and .nix/bun-lock-hash.",
+    );
+  }
+  process.exit(0);
+}
 
 // If hashes match, bun.nix is up to date — nothing to do
 if (currentHash === storedHash) process.exit(0);
@@ -57,10 +70,13 @@ console.log(
   `[check-nix-deps] bun.lock has changed, regenerating ${nixFile}...`,
 );
 
-const result = Bun.spawnSync(["bunx", "bun2nix", "-o", nixFile], {
-  cwd: root,
-  stdio: ["inherit", "inherit", "inherit"],
-});
+const result = Bun.spawnSync(
+  [process.execPath, "x", "--bun", "bun2nix@2.0.8", "-o", nixFile],
+  {
+    cwd: root,
+    stdio: ["inherit", "inherit", "inherit"],
+  },
+);
 
 if (result.exitCode !== 0) {
   console.warn(

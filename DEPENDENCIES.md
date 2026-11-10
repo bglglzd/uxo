@@ -15,15 +15,20 @@ clean audit as proof that every dependency is secure.
 
 ## Frontend tooling
 
-The project and CI use Bun 1.4.4. Its version-scoped/nested overrides require the
-newer lockfile format; older Bun versions cannot install that lockfile reliably.
+The project and CI retain Bun 1.3.13 and the lockfile format supported by the
+pinned bun2nix generator. ESLint 10 uses the existing flat configuration and
+requires Node 20.19+, 22.13+, or 24+.
 
-The scoped override for `@typescript-eslint/typescript-estree > minimatch`
-selects minimatch 11 to address
+The minimatch override selects version 11 to address
 [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249).
-It leaves ESLint's separate minimatch 3 dependency intact because that version
-uses a different API and is outside the advisory's affected range. Remove the
-override when typescript-estree declares a patched version itself.
+ESLint 10 and typescript-estree both use the modern minimatch API; the old
+ESLint 9/minimatch 3 API is no longer in the graph. Remove the override when
+both upstream tools declare patched versions themselves.
+
+Commit the generated `.nix/bun.nix` and `.nix/bun-lock-hash` with `bun.lock`.
+`bun run check:nix-deps` checks the tracked hash on all platforms. Linux CI also
+regenerates the manifest with bun2nix 2.0.8 and compares it byte-for-byte before
+installation, so a postinstall regeneration cannot hide stale committed data.
 
 Zod was an unused direct dependency and has been removed. No application schema
 was migrated to a different validation API.
