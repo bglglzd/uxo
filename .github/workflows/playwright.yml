@@ -18,6 +18,7 @@ on:
       - "bun.lock"
       - "playwright.config.*"
       - "tests/**"
+      - ".github/workflows/playwright.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -26,7 +27,8 @@ concurrency:
 jobs:
   playwright:
     name: Chromium UI smoke tests
-    runs-on: ubuntu-latest
+    # Playwright 1.58.0 supports Ubuntu 24.04, not the newer ubuntu-latest image.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: read
