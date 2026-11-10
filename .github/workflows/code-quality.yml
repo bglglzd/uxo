@@ -8,6 +8,7 @@ on:
       - "src/**"
       - "package.json"
       - "bun.lock"
+      - ".gitattributes"
       - ".eslintrc*"
       - "eslint.config.*"
       - ".prettierrc*"
@@ -19,6 +20,7 @@ on:
       - "src/**"
       - "package.json"
       - "bun.lock"
+      - ".gitattributes"
       - ".eslintrc*"
       - "eslint.config.*"
       - ".prettierrc*"
@@ -32,8 +34,11 @@ concurrency:
 
 jobs:
   code-quality:
-    name: Lint, translations, and formatting
-    runs-on: ubuntu-latest
+    name: Lint, translations, and formatting (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     timeout-minutes: 15
     permissions:
       contents: read
