@@ -33,6 +33,14 @@ installation, so a postinstall regeneration cannot hide stale committed data.
 Zod was an unused direct dependency and has been removed. No application schema
 was migrated to a different validation API.
 
+## Native package compatibility
+
+Tauri's Rust crates and installed JavaScript API/plugins must share major/minor
+versions. `bun run check:tauri-versions` checks the actual installed package
+versions against Cargo.lock in frontend CI, before a native installer build.
+Tauri 2.12 and opener 2.7 are synchronized across both graphs. This check does
+not replace the full native build, installer and runtime acceptance checks.
+
 ## History storage
 
 SQLite is bundled through rusqlite 0.41, which includes the patched SQLite 3.54

@@ -10,6 +10,9 @@ on:
       - "bun.lock"
       - ".nix/**"
       - "scripts/check-nix-deps.ts"
+      - "scripts/check-tauri-versions.ts"
+      - "src-tauri/Cargo.toml"
+      - "src-tauri/Cargo.lock"
       - ".gitattributes"
       - ".eslintrc*"
       - "eslint.config.*"
@@ -24,6 +27,9 @@ on:
       - "bun.lock"
       - ".nix/**"
       - "scripts/check-nix-deps.ts"
+      - "scripts/check-tauri-versions.ts"
+      - "src-tauri/Cargo.toml"
+      - "src-tauri/Cargo.lock"
       - ".gitattributes"
       - ".eslintrc*"
       - "eslint.config.*"
@@ -74,6 +80,9 @@ jobs:
 
       - name: Check translation consistency
         run: bun run check:translations
+
+      - name: Check JS and native Tauri versions
+        run: bun run check:tauri-versions
 
       - name: Run ESLint
         run: bun run lint
