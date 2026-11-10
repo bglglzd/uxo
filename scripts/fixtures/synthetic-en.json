@@ -1,0 +1,10 @@
+{
+  "origin": "Local offline System.Speech synthesis; no microphone or audio playback",
+  "expected_text": "This is a synthetic maintenance test. The quick brown fox jumps over the lazy dog.",
+  "sample_rate": 16000,
+  "channels": 1,
+  "sample_width": 2,
+  "frames": 97520,
+  "duration_seconds": 6.095,
+  "sha256": "87fa022e44a1acaa03efe33052e0f1da368cbb0335a07f60128b98b48ad31d5e"
+}

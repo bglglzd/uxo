@@ -36,6 +36,10 @@ The Windows x64 Cargo target uses `transcribe-cpp` 0.2.x with `default-features 
 
 This is intentional: CPU inference keeps the discrete GPU available to a game and avoids native driver/backend packaging while the product is being stabilized.
 
+The checked-in `.cargo/config.toml` also supplies transcribe.cpp's conservative x86 instruction baseline. It clears cached native/SIMD probes before configuring the backend, so an old CMake cache cannot retain the build machine's AVX-512 requirements. Keep that configuration when building a distributable. Explicit custom `CMAKE_ARGS` can override it for a machine-specific development build; that is outside the portable package configuration checked by CI.
+
+The Windows package audit checks the actual CMake flags and transcribes `scripts/fixtures/synthetic-en.wav` from both installed NSIS and administratively extracted MSI packages. This fixture is offline synthetic speech, with no microphone recording. The test model is downloaded from a pinned revision and verified by SHA-256. Device enumeration alone does not exercise inference kernels. Workflow artifacts include package checksums and a build manifest binding the source, toolchain and tested package hashes; they remain unsigned test artifacts.
+
 ### Prerequisites
 
 Install Visual Studio or Visual Studio Build Tools with:
