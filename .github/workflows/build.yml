@@ -76,6 +76,7 @@ jobs:
         with:
           workspaces: "./src-tauri -> target"
           key: windows-x64-cpu
+          cache-on-failure: true
 
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
