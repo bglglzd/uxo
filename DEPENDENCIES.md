@@ -66,7 +66,7 @@ output and need separate upstream work:
   exists for [RUSTSEC-2026-0097](https://rustsec.org/advisories/RUSTSEC-2026-0097.html).
   This is a build-time code generator; it is not the app's randomness provider.
 - Some transitive crates are marked unmaintained, including GTK layer-shell,
-  bincode, fxhash, paste, pin-utils, proc-macro-error, unic and older zbus types.
+  bincode, fxhash, paste, pin-utils, proc-macro-error and older zbus types.
   Replacing their parent libraries requires separate compatibility work.
 
 These warnings are not claimed fixed. Dependency updates must also pass the
