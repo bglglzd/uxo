@@ -2,7 +2,6 @@ use anyhow::{anyhow, Result};
 use chrono::{DateTime, Local, Utc};
 use log::{debug, error, info};
 use rusqlite::{params, Connection, OptionalExtension};
-use rusqlite_migration::{Migrations, M};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::fs;
@@ -11,14 +10,13 @@ use tauri::AppHandle;
 use tauri_specta::Event;
 
 /// Database migrations for transcription history.
-/// Each migration is applied in order. The library tracks which migrations
-/// have been applied using SQLite's user_version pragma.
+/// Each migration is applied in order in one transaction. SQLite's user_version
+/// tracks the schema so upgrades preserve the existing history database.
 ///
 /// Note: For users upgrading from tauri-plugin-sql, migrate_from_tauri_plugin_sql()
 /// converts the old _sqlx_migrations table tracking to the user_version pragma,
 /// ensuring migrations don't re-run on existing databases.
-static MIGRATIONS: &[M] = &[
-    M::up(
+static MIGRATIONS: &[&str] = &[
         "CREATE TABLE IF NOT EXISTS transcription_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             file_name TEXT NOT NULL,
@@ -27,11 +25,31 @@ static MIGRATIONS: &[M] = &[
             title TEXT NOT NULL,
             transcription_text TEXT NOT NULL
         );",
-    ),
-    M::up("ALTER TABLE transcription_history ADD COLUMN post_processed_text TEXT;"),
-    M::up("ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;"),
-    M::up("ALTER TABLE transcription_history ADD COLUMN post_process_requested BOOLEAN NOT NULL DEFAULT 0;"),
+    "ALTER TABLE transcription_history ADD COLUMN post_processed_text TEXT;",
+    "ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;",
+    "ALTER TABLE transcription_history ADD COLUMN post_process_requested BOOLEAN NOT NULL DEFAULT 0;",
 ];
+
+fn apply_history_migrations(conn: &mut Connection) -> Result<()> {
+    let current: i32 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
+    if current < 0 || current as usize > MIGRATIONS.len() {
+        return Err(anyhow!(
+            "History schema version {current} is newer than this app supports"
+        ));
+    }
+    let current = current as usize;
+    if current == MIGRATIONS.len() {
+        return Ok(());
+    }
+
+    let transaction = conn.transaction()?;
+    for sql in &MIGRATIONS[current..] {
+        transaction.execute_batch(sql)?;
+    }
+    transaction.pragma_update(None, "user_version", MIGRATIONS.len() as i32)?;
+    transaction.commit()?;
+    Ok(())
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
 pub struct PaginatedHistory {
@@ -101,16 +119,8 @@ impl HistoryManager {
 
         let mut conn = Connection::open(&self.db_path)?;
 
-        // Handle migration from tauri-plugin-sql to rusqlite_migration
-        // tauri-plugin-sql used _sqlx_migrations table, rusqlite_migration uses user_version pragma
-        self.migrate_from_tauri_plugin_sql(&conn)?;
-
-        // Create migrations object and run to latest version
-        let migrations = Migrations::new(MIGRATIONS.to_vec());
-
-        // Validate migrations in debug builds
-        #[cfg(debug_assertions)]
-        migrations.validate().expect("Invalid migrations");
+        // Preserve the migration state of databases created by tauri-plugin-sql.
+        Self::migrate_from_tauri_plugin_sql(&conn)?;
 
         // Get current version before migration
         let version_before: i32 =
@@ -118,7 +128,7 @@ impl HistoryManager {
         debug!("Database version before migration: {}", version_before);
 
         // Apply any pending migrations
-        migrations.to_latest(&mut conn)?;
+        apply_history_migrations(&mut conn)?;
 
         // Get version after migration
         let version_after: i32 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
@@ -135,11 +145,11 @@ impl HistoryManager {
         Ok(())
     }
 
-    /// Migrate from tauri-plugin-sql's migration tracking to rusqlite_migration's.
-    /// tauri-plugin-sql used a _sqlx_migrations table, while rusqlite_migration uses
+    /// Migrate from tauri-plugin-sql's migration tracking to the history store.
+    /// tauri-plugin-sql used a _sqlx_migrations table, while the history store uses
     /// SQLite's user_version pragma. This function checks if the old system was in use
     /// and sets the user_version accordingly so migrations don't re-run.
-    fn migrate_from_tauri_plugin_sql(&self, conn: &Connection) -> Result<()> {
+    fn migrate_from_tauri_plugin_sql(conn: &Connection) -> Result<()> {
         // Check if the old _sqlx_migrations table exists
         let has_sqlx_migrations: bool = conn
             .query_row(
@@ -158,7 +168,7 @@ impl HistoryManager {
             conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
 
         if current_version > 0 {
-            // Already migrated to rusqlite_migration system
+            // Already using user_version tracking.
             return Ok(());
         }
 
@@ -173,7 +183,7 @@ impl HistoryManager {
 
         if old_version > 0 {
             info!(
-                "Migrating from tauri-plugin-sql (version {}) to rusqlite_migration",
+                "Migrating tauri-plugin-sql tracking (version {}) to user_version",
                 old_version
             );
 
@@ -655,22 +665,145 @@ mod tests {
     use rusqlite::{params, Connection};
 
     fn setup_conn() -> Connection {
-        let conn = Connection::open_in_memory().expect("open in-memory db");
-        conn.execute_batch(
-            "CREATE TABLE transcription_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                file_name TEXT NOT NULL,
-                timestamp INTEGER NOT NULL,
-                saved BOOLEAN NOT NULL DEFAULT 0,
-                title TEXT NOT NULL,
-                transcription_text TEXT NOT NULL,
-                post_processed_text TEXT,
-                post_process_prompt TEXT,
-                post_process_requested BOOLEAN NOT NULL DEFAULT 0
-            );",
-        )
-        .expect("create transcription_history table");
+        let mut conn = Connection::open_in_memory().expect("open in-memory db");
+        apply_history_migrations(&mut conn).expect("initialize history schema");
         conn
+    }
+
+    fn legacy_conn(version: usize) -> Connection {
+        let conn = Connection::open_in_memory().expect("open legacy db");
+        for sql in &MIGRATIONS[..version] {
+            conn.execute_batch(sql).expect("create legacy schema");
+        }
+        conn.pragma_update(None, "user_version", version as i32)
+            .expect("set legacy version");
+        if version > 0 {
+            conn.execute(
+                "INSERT INTO transcription_history (file_name, timestamp, title, transcription_text)
+                 VALUES ('synthetic.wav', 100, 'Synthetic recording', 'Keep this transcript')",
+                [],
+            )
+            .expect("insert legacy recording");
+        }
+        conn
+    }
+
+    #[test]
+    fn every_history_schema_upgrades_without_losing_recordings() {
+        for version in 0..=MIGRATIONS.len() {
+            let mut conn = legacy_conn(version);
+            apply_history_migrations(&mut conn).expect("upgrade legacy history");
+            apply_history_migrations(&mut conn).expect("reopening is idempotent");
+            let current: i32 = conn
+                .pragma_query_value(None, "user_version", |row| row.get(0))
+                .unwrap();
+            assert_eq!(current, MIGRATIONS.len() as i32);
+            let entry = HistoryManager::get_latest_entry_with_conn(&conn).unwrap();
+            if version == 0 {
+                assert!(entry.is_none());
+            } else {
+                let entry = entry.expect("legacy recording remains");
+                assert_eq!(entry.transcription_text, "Keep this transcript");
+                assert!(!entry.post_process_requested);
+            }
+        }
+    }
+
+    #[test]
+    fn legacy_sqlx_tracking_skips_successful_migrations_only() {
+        for version in 1..=MIGRATIONS.len() {
+            let mut conn = legacy_conn(version);
+            conn.pragma_update(None, "user_version", 0).unwrap();
+            conn.execute_batch("CREATE TABLE _sqlx_migrations (version INTEGER, success BOOLEAN);")
+                .unwrap();
+            conn.execute(
+                "INSERT INTO _sqlx_migrations VALUES (?1, 1), (?2, 0)",
+                params![version as i32, (version + 1) as i32],
+            )
+            .unwrap();
+            HistoryManager::migrate_from_tauri_plugin_sql(&conn).unwrap();
+            apply_history_migrations(&mut conn).expect("upgrade SQLx database");
+            assert_eq!(
+                HistoryManager::get_latest_entry_with_conn(&conn)
+                    .unwrap()
+                    .unwrap()
+                    .transcription_text,
+                "Keep this transcript"
+            );
+        }
+    }
+
+    #[test]
+    fn newer_history_schema_is_refused_without_changing_data() {
+        let mut conn = legacy_conn(MIGRATIONS.len());
+        let newer = MIGRATIONS.len() as i32 + 1;
+        conn.pragma_update(None, "user_version", newer).unwrap();
+        assert!(apply_history_migrations(&mut conn).is_err());
+        let current: i32 = conn
+            .pragma_query_value(None, "user_version", |row| row.get(0))
+            .unwrap();
+        assert_eq!(current, newer);
+        assert_eq!(
+            HistoryManager::get_latest_entry_with_conn(&conn)
+                .unwrap()
+                .unwrap()
+                .transcription_text,
+            "Keep this transcript"
+        );
+    }
+
+    #[test]
+    fn failed_upgrade_rolls_back_columns_and_version() {
+        let mut conn = legacy_conn(1);
+        conn.execute_batch(
+            "ALTER TABLE transcription_history ADD COLUMN post_process_requested BOOLEAN;",
+        )
+        .unwrap();
+        assert!(apply_history_migrations(&mut conn).is_err());
+        let current: i32 = conn
+            .pragma_query_value(None, "user_version", |row| row.get(0))
+            .unwrap();
+        assert_eq!(current, 1);
+        assert!(conn
+            .prepare("SELECT post_processed_text, post_process_prompt FROM transcription_history")
+            .is_err());
+        let text: String = conn
+            .query_row(
+                "SELECT transcription_text FROM transcription_history",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(text, "Keep this transcript");
+    }
+
+    #[test]
+    fn history_migrations_persist_across_file_reopen() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("history.db");
+        {
+            let conn = Connection::open(&path).unwrap();
+            conn.execute_batch(MIGRATIONS[0]).unwrap();
+            conn.pragma_update(None, "user_version", 1).unwrap();
+            conn.execute(
+                "INSERT INTO transcription_history (file_name, timestamp, title, transcription_text)
+                 VALUES ('synthetic.wav', 100, 'Synthetic recording', 'Persistent transcript')",
+                [],
+            )
+            .unwrap();
+        }
+        {
+            let mut conn = Connection::open(&path).unwrap();
+            apply_history_migrations(&mut conn).unwrap();
+        }
+        let conn = Connection::open(&path).unwrap();
+        assert_eq!(
+            HistoryManager::get_latest_entry_with_conn(&conn)
+                .unwrap()
+                .unwrap()
+                .transcription_text,
+            "Persistent transcript"
+        );
     }
 
     fn insert_entry(conn: &Connection, timestamp: i64, text: &str, post_processed: Option<&str>) {

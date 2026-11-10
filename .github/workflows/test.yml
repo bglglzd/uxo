@@ -5,10 +5,12 @@ on:
   push:
     branches: [main]
     paths:
+      - ".cargo/**"
       - "src-tauri/**"
       - ".github/workflows/test.yml"
   pull_request:
     paths:
+      - ".cargo/**"
       - "src-tauri/**"
       - ".github/workflows/test.yml"
 

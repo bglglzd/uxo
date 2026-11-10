@@ -10,7 +10,9 @@ concurrency:
 jobs:
   package:
     permissions:
-      contents: read
+      # The reusable build can attach assets when a release ID is supplied.
+      # This manual caller supplies none and retains workflow artifacts only.
+      contents: write
     uses: ./.github/workflows/build.yml
     with:
       upload-artifacts: true

@@ -5,9 +5,15 @@ on:
   push:
     branches: [main]
     paths:
+      - ".cargo/**"
       - "src/**"
       - "package.json"
       - "bun.lock"
+      - ".nix/**"
+      - "scripts/check-nix-deps.ts"
+      - "scripts/check-tauri-versions.ts"
+      - "src-tauri/Cargo.toml"
+      - "src-tauri/Cargo.lock"
       - ".gitattributes"
       - ".eslintrc*"
       - "eslint.config.*"
@@ -17,9 +23,15 @@ on:
       - ".github/workflows/**"
   pull_request:
     paths:
+      - ".cargo/**"
       - "src/**"
       - "package.json"
       - "bun.lock"
+      - ".nix/**"
+      - "scripts/check-nix-deps.ts"
+      - "scripts/check-tauri-versions.ts"
+      - "src-tauri/Cargo.toml"
+      - "src-tauri/Cargo.lock"
       - ".gitattributes"
       - ".eslintrc*"
       - "eslint.config.*"
@@ -56,11 +68,23 @@ jobs:
         with:
           components: rustfmt
 
+      - name: Verify tracked Nix lock hash
+        run: bun run check:nix-deps
+
+      - name: Verify Nix prefetch manifest
+        if: runner.os == 'Linux'
+        run: |
+          bun x --bun bun2nix@2.0.8 -o "$RUNNER_TEMP/bun.nix"
+          diff -u .nix/bun.nix "$RUNNER_TEMP/bun.nix"
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
       - name: Check translation consistency
         run: bun run check:translations
+
+      - name: Check JS and native Tauri versions
+        run: bun run check:tauri-versions
 
       - name: Run ESLint
         run: bun run lint

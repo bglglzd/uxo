@@ -1,1 +1,6 @@
 [build]
+
+[env]
+# Static CPU builds must run on a different x86 machine than the build host.
+# Clear cached SIMD probes before applying transcribe.cpp's portable baseline.
+TRANSCRIBE_CMAKE_ARGS = "-UGGML_NATIVE -UGGML_SSE42 -UGGML_AVX* -UGGML_BMI2 -UGGML_FMA -UGGML_F16C -DTRANSCRIBE_X86_CONSERVATIVE=ON"
